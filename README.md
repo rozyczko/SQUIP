@@ -1,2 +1,2 @@
 # SQUIP
-S(q,w) QUality Investigation of Peptides
+S(q,w) QUalitative Investigation of Peptides
