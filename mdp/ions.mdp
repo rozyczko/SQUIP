@@ -1,0 +1,5 @@
+; ions.mdp - minimal parameters for ion addition
+; Used with gmx grompp to prepare system for gmx genion
+
+integrator  = steep
+nsteps      = 0
