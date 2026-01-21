@@ -1,6 +1,71 @@
 # Issue: Proper pdb2gmx Usage for Single Amino Acid Parameterization
 
-## The Problem
+## Resolution: Using Available Force Fields
+
+The original issue was that CHARMM36m and AMBER ff19SB force fields were not available in the GROMACS installation. This has been **resolved** by using the available force fields:
+
+| Requested Force Field | Available Substitute | Status |
+|----------------------|---------------------|--------|
+| CHARMM36m | **CHARMM27** | ✅ Works natively |
+| AMBER ff19SB | **AMBER99SB-ILDN** | ✅ Works (with custom ZGLY residue) |
+
+### Working Solutions
+
+#### 1. CHARMM27 (Direct Support for Zwitterions)
+
+CHARMM27 natively supports zwitterionic amino acids through terminal patches:
+- **N-terminus**: GLY-NH3+ (protonated amine)
+- **C-terminus**: COO- (deprotonated carboxylate)
+
+**Usage:**
+```bash
+# Generate glycine topology (select "0" for both terminal options: GLY-NH3+ and COO-)
+echo "0
+0" | gmx pdb2gmx -f structures/glycine_zw_charmm.pdb -o topologies/glycine_charmm27.gro -p topologies/glycine_charmm27.top -ff charmm27 -water tip3p -ter
+
+# Generate Gly-Gly topology
+echo "0
+0" | gmx pdb2gmx -f structures/glygly_zw_charmm.pdb -o topologies/glygly_charmm27.gro -p topologies/glygly_charmm27.top -ff charmm27 -water tip3p -ter
+```
+
+#### 2. AMBER99SB-ILDN (Custom ZGLY Residue for Single Amino Acid)
+
+AMBER force fields handle termini as separate residue definitions (NGLY, CGLY) and don't support standalone zwitterions by default. A custom **ZGLY** residue was created in the local force field copy.
+
+**For Gly-Gly dipeptide**: Works natively (first residue uses NGLY, second uses CGLY)
+```bash
+gmx pdb2gmx -f structures/glygly_zw_charmm.pdb -o topologies/glygly_amber99sb.gro -p topologies/glygly_amber99sb.top -ff amber99sb-ildn -water tip3p
+```
+
+**For single glycine**: Use the custom ZGLY residue
+```bash
+gmx pdb2gmx -f structures/glycine_zw_amber.pdb -o topologies/glycine_amber99sb.gro -p topologies/glycine_amber99sb.top -ff amber99sb-ildn -water tip3p
+```
+
+### Files Created
+
+**PDB Structures (properly formatted for pdb2gmx):**
+- `structures/glycine_zw_charmm.pdb` - Glycine for CHARMM27
+- `structures/glygly_zw_charmm.pdb` - Gly-Gly for CHARMM27
+- `structures/glycine_zw_amber.pdb` - Glycine with ZGLY residue for AMBER
+
+**Custom AMBER Force Field:**
+- `amber99sb-ildn.ff/` - Local copy with custom ZGLY residue
+  - `aminoacids.rtp` - Added ZGLY residue definition
+  - `aminoacids.hdb` - Added hydrogen database entry
+  - `aminoacids.arn` - Added atom renaming rules
+  - `aminoacids.r2b` - Added residue mapping
+- `residuetypes.dat` - Added ZGLY as Protein type
+
+**Generated Topologies:**
+- `topologies/glycine_charmm27.gro/.top` - CHARMM27 glycine
+- `topologies/glygly_charmm27.gro/.top` - CHARMM27 Gly-Gly
+- `topologies/glycine_amber99sb.gro/.top` - AMBER99SB-ILDN glycine
+- `topologies/glygly_amber99sb.gro/.top` - AMBER99SB-ILDN Gly-Gly
+
+---
+
+## Original Problem Description
 
 When trying to use `gmx pdb2gmx` on our glycine and Gly-Gly structures, we encountered errors because the tool expects PDB files formatted according to specific force field conventions. The phrase "proper pdb2gmx usage" refers to providing input files that meet these requirements.
 

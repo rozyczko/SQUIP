@@ -1,0 +1,10 @@
+TITLE     Glycine zwitterion for AMBER force field
+REMARK    Atom names follow AMBER ZGLY conventions (custom residue)
+REMARK    N-terminus: NH3+, C-terminus: COO-
+ATOM      1  N   ZGLY     1       1.901  -0.081  -0.009  1.00  0.00           N
+ATOM      2  CA  ZGLY     1       0.734   0.787   0.008  1.00  0.00           C
+ATOM      3  C   ZGLY     1      -0.502  -0.069   0.012  1.00  0.00           C
+ATOM      4  O   ZGLY     1      -0.484  -1.293  -0.001  1.00  0.00           O
+ATOM      5  OXT ZGLY     1      -1.649   0.657  -0.010  1.00  0.00           O
+TER
+END

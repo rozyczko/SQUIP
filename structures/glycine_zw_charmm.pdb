@@ -1,0 +1,12 @@
+TITLE     Glycine zwitterion for CHARMM27 force field
+REMARK    Atom names follow CHARMM conventions
+REMARK    N-terminus: NH3+, C-terminus: COO-
+ATOM      1  N   GLY A   1       1.901  -0.081  -0.009  1.00  0.00           N
+ATOM      2  CA  GLY A   1       0.734   0.787   0.008  1.00  0.00           C
+ATOM      3  HA1 GLY A   1       0.733   1.421  -0.882  1.00  0.00           H
+ATOM      4  HA2 GLY A   1       0.746   1.409   0.907  1.00  0.00           H
+ATOM      5  C   GLY A   1      -0.502  -0.069   0.012  1.00  0.00           C
+ATOM      6  O   GLY A   1      -0.484  -1.293  -0.001  1.00  0.00           O
+ATOM      7  OXT GLY A   1      -1.649   0.657  -0.010  1.00  0.00           O
+TER       8      GLY A   1
+END
