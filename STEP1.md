@@ -5,7 +5,9 @@ This document provides a detailed implementation plan for **Step 1: System Prepa
 
 **Timeline**: Week 1  
 **Target Systems**: Glycine (amino acid) and Gly-Gly (dipeptide)  
-**Target Conditions**: 2 temperatures (300 K, 350 K) × 2 force fields (CHARMM36m, AMBER ff19SB)
+**Target Conditions**: 2 temperatures (300 K, 350 K) × 2 force fields
+
+> **Note**: Originally specified CHARMM36m and AMBER ff19SB. These have been substituted with **CHARMM27** and **AMBER99SB-ILDN** which are available in the GROMACS installation and properly support zwitterionic amino acids.
 
 ---
 
@@ -50,29 +52,35 @@ Create GROMACS topology files (.top) for each molecule using CHARMM36m and AMBER
 
 ### Implementation Steps
 
-1. **CHARMM36m Topologies**
+1. **CHARMM27 Topologies** (substitute for CHARMM36m)
    ```bash
-   # For glycine
-   gmx pdb2gmx -f glycine.pdb -o glycine_charmm.gro -p glycine_charmm.top -ff charmm36m -water tip3p
+   # For glycine - select "0" for GLY-NH3+ (N-term) and "0" for COO- (C-term)
+   echo "0
+   0" | gmx pdb2gmx -f structures/glycine_zw_charmm.pdb -o topologies/glycine_charmm27.gro \
+        -p topologies/glycine_charmm27.top -ff charmm27 -water tip3p -ter
    
    # For Gly-Gly
-   gmx pdb2gmx -f gly-gly.pdb -o gly-gly_charmm.gro -p gly-gly_charmm.top -ff charmm36m -water tip3p
+   echo "0
+   0" | gmx pdb2gmx -f structures/glygly_zw_charmm.pdb -o topologies/glygly_charmm27.gro \
+        -p topologies/glygly_charmm27.top -ff charmm27 -water tip3p -ter
    ```
 
-2. **AMBER ff19SB Topologies**
+2. **AMBER99SB-ILDN Topologies** (substitute for ff19SB)
    ```bash
-   # For glycine
-   gmx pdb2gmx -f glycine.pdb -o glycine_amber.gro -p glycine_amber.top -ff amber99sb-ildn -water tip3p
-   # Note: May need to use AmberTools tleap for ff19SB, then convert with ParmEd
+   # For glycine - uses custom ZGLY residue in local amber99sb-ildn.ff/
+   gmx pdb2gmx -f structures/glycine_zw_amber.pdb -o topologies/glycine_amber99sb.gro \
+        -p topologies/glycine_amber99sb.top -ff amber99sb-ildn -water tip3p
    
-   # For Gly-Gly
-   gmx pdb2gmx -f gly-gly.pdb -o gly-gly_amber.gro -p gly-gly_amber.top -ff amber99sb-ildn -water tip3p
+   # For Gly-Gly - works natively (NGLY for first residue, CGLY for last)
+   gmx pdb2gmx -f structures/glygly_zw_charmm.pdb -o topologies/glygly_amber99sb.gro \
+        -p topologies/glygly_amber99sb.top -ff amber99sb-ildn -water tip3p
    ```
 
-3. **Handle Force Field Availability**
-   - CHARMM36m: Typically available in GROMACS or via CHARMM-GUI
-   - AMBER ff19SB: May require AmberTools → ParmEd conversion to GROMACS format
-   - Document any modifications or special handling needed
+3. **Force Field Configuration**
+   - **CHARMM27**: Native zwitterion support via `-ter` flag (select GLY-NH3+ and COO-)
+   - **AMBER99SB-ILDN**: Custom ZGLY residue created for single amino acids
+   - Local force field copy at `amber99sb-ildn.ff/` with ZGLY additions
+   - All topologies verified with total charge = 0.000 e
 
 ### Tools
 - GROMACS `pdb2gmx`
@@ -80,10 +88,10 @@ Create GROMACS topology files (.top) for each molecule using CHARMM36m and AMBER
 - CHARMM-GUI as alternative for CHARMM36m setup
 
 ### Deliverables
-- `glycine_charmm.top`, `glycine_charmm.gro`
-- `glycine_amber.top`, `glycine_amber.gro`
-- `gly-gly_charmm.top`, `gly-gly_charmm.gro`
-- `gly-gly_amber.top`, `gly-gly_amber.gro`
+- `topologies/glycine_charmm27.top`, `topologies/glycine_charmm27.gro` ✅
+- `topologies/glycine_amber99sb.top`, `topologies/glycine_amber99sb.gro` ✅
+- `topologies/glygly_charmm27.top`, `topologies/glygly_charmm27.gro` ✅
+- `topologies/glygly_amber99sb.top`, `topologies/glygly_amber99sb.gro` ✅
 
 ---
 
@@ -391,10 +399,10 @@ Equilibrate the system at target pressure (1 bar) to achieve proper density befo
 
 ### Expected Outputs (8 Fully Prepared Systems)
 
-1. **Glycine + CHARMM36m** at 300 K and 350 K
-2. **Glycine + AMBER ff19SB** at 300 K and 350 K
-3. **Gly-Gly + CHARMM36m** at 300 K and 350 K
-4. **Gly-Gly + AMBER ff19SB** at 300 K and 350 K
+1. **Glycine + CHARMM27** at 300 K and 350 K
+2. **Glycine + AMBER99SB-ILDN** at 300 K and 350 K
+3. **Gly-Gly + CHARMM27** at 300 K and 350 K
+4. **Gly-Gly + AMBER99SB-ILDN** at 300 K and 350 K
 
 ### Files per System
 - Equilibrated structure: `npt_[temp]K.gro`
@@ -454,7 +462,7 @@ Once all 8 systems are equilibrated and verified, proceed to:
 
 ## Notes and Considerations
 
-1. **Force Field Installation**: Ensure both CHARMM36m and AMBER ff19SB are properly installed in GROMACS or available via conversion tools.
+1. **Force Field Configuration**: CHARMM27 and AMBER99SB-ILDN are used (available in GROMACS). For AMBER, a local copy with custom ZGLY residue is required for single amino acids.
 
 2. **Parallelization**: Systems can be prepared in parallel since they are independent.
 
