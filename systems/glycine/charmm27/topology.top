@@ -1,0 +1,50 @@
+; GROMACS topology file
+; Generated for CHARMM36m force field
+; Molecule: GLY
+
+; Include force field parameters
+; #include "charmm36-jul2022.ff/forcefield.itp"
+; Note: Using simplified parameters - for production use proper force field files
+
+[ defaults ]
+; nbfunc        comb-rule       gen-pairs       fudgeLJ fudgeQQ
+1               2               yes             1.0     1.0
+
+[ atomtypes ]
+; name  at.num   mass     charge ptype  sigma      epsilon
+OC      8        15.999   0.000  A      0.29600    0.87864
+NH3     7        14.007   0.000  A      0.33000    0.71128
+CT2     6        12.011   0.000  A      0.35000    0.27614
+HA      1        1.008    0.000  A      0.24700    0.06276
+
+[ moleculetype ]
+; Name            nrexcl
+GLY                  3
+
+[ atoms ]
+;   nr       type  resnr residue  atom   cgnr     charge       mass
+     1         OC      1     GLY     O      1   -0.50000     15.99900
+     2         OC      1     GLY     O      2   -0.50000     15.99900
+     3        NH3      1     GLY     N      3   -0.30000     14.00700
+     4        CT2      1     GLY     C      4    0.00000     12.01100
+     5        CT2      1     GLY     C      5    0.00000     12.01100
+     6         HA      1     GLY     H      6    0.09000      1.00800
+     7         HA      1     GLY     H      7    0.09000      1.00800
+     8         HA      1     GLY     H      8    0.09000      1.00800
+     9         HA      1     GLY     H      9    0.09000      1.00800
+    10         HA      1     GLY     H     10    0.09000      1.00800
+
+; Total charge: -0.850
+
+[ bonds ]
+;  ai    aj funct            c0            c1
+; Note: Bond information should be added based on molecular structure
+
+[ system ]
+; Name
+GLY in water
+
+[ molecules ]
+; Compound        #mols
+GLY                 50
+SOL              5104
