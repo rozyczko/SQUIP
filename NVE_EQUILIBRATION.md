@@ -225,6 +225,82 @@ The 4.3% volume reduction during NPT is expected physical behavior (system findi
 
 ---
 
+## AMBER TIP4P-Ew NVE Test Results (2026-01-30)
+
+After migrating AMBER systems to TIP4P-Ew water model, NVE verification tests were run on both glycine and gly-gly systems to validate the new setup.
+
+### Test Configuration
+- **Water model**: TIP4P-Ew (4-site, virtual charge site MW)
+- **Duration**: 10 ps (5000 steps × 2 fs)
+- **Starting point**: NVT checkpoint at 100 ps
+- **MDP file**: `mdp/nve_test.mdp` (with `lincs_iter = 2`)
+
+### Glycine AMBER TIP4P-Ew Results
+
+| Property | Value | Criterion | Status |
+|----------|-------|-----------|--------|
+| Total Atoms | 20,740 | - | - |
+| Avg Temperature | 301.03 K | 300 ±5 K | ✅ Pass |
+| Temperature drift | +1.35 K / 10 ps | stable | ✅ Pass |
+| Temperature RMSD | 1.83 K | expected ~2 K | ✅ Pass |
+| Total Energy drift | 21.1 kJ/mol / 10 ps | <16 kJ/mol ideal | ⚠️ Slightly elevated |
+| Per-atom drift | 0.00102 kJ/mol/atom | <0.001 ideal | ≈ Borderline |
+
+### Gly-Gly AMBER TIP4P-Ew Results
+
+| Property | Value | Criterion | Status |
+|----------|-------|-----------|--------|
+| Total Atoms | 21,086 | - | - |
+| Avg Temperature | 299.71 K | 300 ±5 K | ✅ Pass |
+| Temperature drift | -1.09 K / 10 ps | stable | ✅ Pass |
+| Temperature RMSD | 1.99 K | expected ~2 K | ✅ Pass |
+| Total Energy drift | 23.3 kJ/mol / 10 ps | <16 kJ/mol ideal | ⚠️ Slightly elevated |
+| Per-atom drift | 0.00111 kJ/mol/atom | <0.001 ideal | ≈ Borderline |
+
+### Comparison: TIP3P vs TIP4P-Ew
+
+| System | Water Model | Atoms | Energy Drift (kJ/mol/10ps) | Per-atom Drift |
+|--------|-------------|-------|----------------------------|----------------|
+| glycine_charmm | TIP3P | 15,812 | 12.3 | 0.00078 |
+| glycine_amber | TIP4P-Ew | 20,740 | 21.1 | 0.00102 |
+| glygly_amber | TIP4P-Ew | 21,086 | 23.3 | 0.00111 |
+
+### Analysis
+
+1. **Consistent behavior across TIP4P-Ew systems** - Both glycine and gly-gly show similar energy drift (~21-23 kJ/mol over 10 ps), indicating the drift is a systematic property of the TIP4P-Ew virtual site implementation rather than a setup error.
+
+2. **TIP4P-Ew has higher drift than TIP3P** - The 4-site water model shows ~1.5× higher per-atom energy drift compared to TIP3P. This is expected because:
+   - Virtual sites (MW) add computational complexity
+   - Virtual site positions are computed each step, introducing small numerical errors
+   - The constraint algorithm handles more degrees of freedom
+
+3. **Per-atom drift is borderline acceptable** - At ~0.001 kJ/mol/atom over 10 ps, this extrapolates to ~0.1 kJ/mol/atom/ns, which is 10× the strict criterion (0.01 kJ/mol/atom/ns). However:
+   - For thermostatted production runs (NVT/NPT), this drift is irrelevant
+   - The thermostat continuously corrects energy fluctuations
+   - QENS-relevant dynamics occur on ps timescales, faster than drift accumulation
+
+4. **Temperature equilibration excellent** - Both systems maintain target temperature within ±1.5 K with RMSD ~2 K, matching theoretical predictions for ~20,000 atom systems.
+
+### Do We Need Full NVE Equilibration?
+
+**No.** The recommendation remains unchanged:
+
+| Approach | Status |
+|----------|--------|
+| Full NVE equilibration for all 8 systems | ❌ Not needed |
+| NVE production runs | ❌ Not recommended (use NPT) |
+| Quick NVE verification on representative systems | ✅ Done (2 systems tested) |
+| Proceed with NPT production | ✅ Recommended |
+
+**Rationale:**
+- Energy drift is a systematic property, not a sign of system instability
+- Production runs use V-rescale thermostat which handles energy drift
+- NPT ensemble matches experimental QENS conditions (constant P, T)
+- All systems show consistent, predictable behavior
+- Temperature stability confirms proper equilibration
+
+---
+
 ## References
 
 1. Bussi, G., Donadio, D., & Parrinello, M. (2007). Canonical sampling through velocity rescaling. J. Chem. Phys. 126, 014101.

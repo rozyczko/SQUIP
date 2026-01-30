@@ -2,7 +2,7 @@
 ;	File 'mdout.mdp' was generated
 ;	By user: piotr (-1)
 ;	On host: WORKSTATION
-;	At date: Fri Jan 30 18:16:47 2026
+;	At date: Fri Jan 30 19:02:27 2026
 ;
 ;	Created by:
 ;	                     :-) GROMACS - gmx grompp, 2021.5 (-:
@@ -11,7 +11,7 @@
 ;	Data prefix:  C:\util\gromacs
 ;	Working dir:  C:\Users\piotr\projects\other\SQUIP
 ;	Command line:
-;	  gmx grompp -f mdp/npt_350K.mdp -c nvt_new/glygly_amber_350K_nvt.gro -t nvt_new/glygly_amber_350K_nvt.cpt -p topologies/glygly_amber.top -o npt_new/glygly_amber_350K_npt.tpr
+;	  gmx grompp -f mdp/nve_test.mdp -c nvt/glygly_amber_300K_nvt.gro -t nvt/glygly_amber_300K_nvt.cpt -p topologies/glygly_amber.top -o nve_test/glygly_amber_300K_nve.tpr
 
 ; VARIOUS PREPROCESSING OPTIONS
 ; Preprocessor information: use cpp syntax.
@@ -25,7 +25,7 @@ integrator               = md
 ; Start time and timestep in ps
 tinit                    = 0
 dt                       = 0.002
-nsteps                   = 50000
+nsteps                   = 5000
 ; For exact run continuation or redoing part of a run
 init-step                = 0
 ; Part index is updated automatically on checkpointing (keeps files separate)
@@ -65,11 +65,11 @@ nstxout                  = 0
 nstvout                  = 0
 nstfout                  = 0
 ; Output frequency for energies to log file and energy file
-nstlog                   = 500
+nstlog                   = 100
 nstcalcenergy            = 100
-nstenergy                = 500
+nstenergy                = 100
 ; Output frequency and precision for .xtc file
-nstxout-compressed       = 1000
+nstxout-compressed       = 500
 compressed-x-precision   = 1000
 ; This selects the subset of atoms for the compressed
 ; trajectory file. You can select multiple groups. By
@@ -121,7 +121,7 @@ fourier-nx               = 0
 fourier-ny               = 0
 fourier-nz               = 0
 ; EWALD/PME/PPPM parameters
-pme_order                = 4
+pme-order                = 4
 ewald-rtol               = 1e-05
 ewald-rtol-lj            = 0.001
 lj-pme-comb-rule         = Geometric
@@ -131,23 +131,23 @@ implicit-solvent         = no
 
 ; OPTIONS FOR WEAK COUPLING ALGORITHMS
 ; Temperature coupling  
-tcoupl                   = V-rescale
+tcoupl                   = no
 nsttcouple               = -1
 nh-chain-length          = 10
 print-nose-hoover-chain-variables = no
 ; Groups to couple separately
-tc-grps                  = System
+tc-grps                  = 
 ; Time constant (ps) and reference temperature (K)
-tau_t                    = 0.1
-ref_t                    = 350
+tau-t                    = 
+ref-t                    = 
 ; pressure coupling     
-pcoupl                   = Parrinello-Rahman
-pcoupltype               = isotropic
+pcoupl                   = no
+pcoupltype               = Isotropic
 nstpcouple               = -1
 ; Time constant (ps), compressibility (1/bar) and reference P (bar)
-tau_p                    = 2.0
-compressibility          = 4.5e-5
-ref_p                    = 1.0
+tau-p                    = 1
+compressibility          = 
+ref-p                    = 
 ; Scaling of reference coordinates, No, All or COM
 refcoord-scaling         = No
 
@@ -186,7 +186,7 @@ lincs-order              = 4
 ; Number of iterations in the final step of LINCS. 1 is fine for
 ; normal simulations, but use 2 to conserve energy in NVE runs.
 ; For energy minimization with constraints it should be 4 to 8.
-lincs-iter               = 1
+lincs_iter               = 2
 ; Lincs will write a warning to the stderr if in one step a bond
 ; rotates over more degrees than
 lincs-warnangle          = 30
