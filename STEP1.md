@@ -362,14 +362,23 @@ Equilibrate the system at target pressure (1 bar) to achieve proper density befo
    constraint_algorithm = LINCS
    ```
 
-2. **Run NPT Equilibration**
+2a. **Run NPT Equilibration**
    ```bash
    # For 300 K system
    gmx grompp -f npt_300K.mdp -c nvt_300K.gro -p glycine_charmm.top -t nvt_300K.cpt -o npt_300K.tpr
    gmx mdrun -v -deffnm npt_300K
    ```
+2b. **Run NVE Equilibration** (Optional - for dynamics validation, see [NVE_EQUILIBRATION.md](NVE_EQUILIBRATION.md))
+   ```bash
+   # For 300 K system - short NVE test after NVT to verify energy conservation
+   gmx grompp -f nve_300K.mdp -c nvt_300K.gro -p glycine_charmm.top -t nvt_300K.cpt -o nve_300K.tpr
+   gmx mdrun -v -deffnm nve_300K
+   
+   # Verify energy conservation (Total-Energy drift should be < 1 kJ/mol over 10 ps)
+   echo "12 0" | gmx energy -f nve_300K.edr -o nve_300K_energy.xvg
+   ```
 
-3. **Verify Pressure and Density Equilibration**
+3. **Verify Pressure and Density and volume Equilibration**
    ```bash
    # Extract pressure
    gmx energy -f npt_300K.edr -o pressure_300K.xvg

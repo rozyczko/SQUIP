@@ -132,4 +132,5 @@ Glycine zwitterion for AMBER force field
 
 [ molecules ]
 ; Compound        #mols
-Protein             1
+Protein            50
+SOL              5109

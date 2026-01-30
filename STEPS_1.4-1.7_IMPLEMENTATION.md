@@ -9,9 +9,18 @@ This document provides a detailed implementation plan for completing the remaini
 | CHARMM27 | ✅ Ready | Native zwitterion support via `-ter` flag |
 | AMBER99SB-ILDN | ✅ Ready | Custom ZGLY residue for single amino acids |
 
+### Progress Summary
+
+| Substep | Status | Completed |
+|---------|--------|----------|
+| 1.4 Counter-ions | ✅ Complete | 2026-01-26 |
+| 1.5 Energy Minimization | ✅ Complete | 2026-01-26 |
+| 1.6 NVT Equilibration | ✅ Complete | 2026-01-30 |
+| 1.7 NPT Equilibration | ⏸️ Pending | - |
+
 ---
 
-## Substep 1.4: Add Counter-ions and Neutralize Systems
+## Substep 1.4: Add Counter-ions and Neutralize Systems ✅ COMPLETE
 
 ### Objective
 Add Na+ and Cl- ions to neutralize the system charge and achieve electroneutrality.
@@ -100,9 +109,33 @@ Run for all 4 systems and confirm electroneutrality.
 - 4 updated topology files with ion counts (if any needed)
 - Verification report confirming total charge = 0 for all systems
 
+### Actual Results (Completed 2026-01-26)
+
+**TPR Files Generated:**
+- ✅ `topologies/glycine_charmm_ions.tpr` (444 KB)
+- ✅ `topologies/glycine_amber_ions.tpr` (387 KB)
+- ✅ `topologies/glygly_charmm_ions.tpr` (446 KB)
+- ✅ `topologies/glygly_amber_ions.tpr` (388 KB)
+
+**Neutralized Structures:**
+- ✅ `topologies/glycine_charmm_neutral.gro` (15,812 atoms)
+- ✅ `topologies/glycine_amber_neutral.gro` (15,827 atoms)
+- ✅ `topologies/glygly_charmm_neutral.gro` (15,820 atoms)
+- ✅ `topologies/glygly_amber_neutral.gro` (15,808 atoms)
+
+**Ion Addition Results:**
+As expected for proper zwitterions, all systems reported "No ions to add" - confirming total charge = 0 for all 4 systems.
+
+**Topology Updates:**
+The `[ molecules ]` sections were updated with correct counts:
+- Glycine systems: 50 Protein + ~5100 SOL
+- Gly-Gly systems: 50 Protein_chain_A + ~4990 SOL
+
+**Note:** Atom name mismatch warnings occurred between topology and solvated GRO files (cosmetic only - GROMACS uses topology names, which is correct).
+
 ---
 
-## Substep 1.5: Energy Minimization
+## Substep 1.5: Energy Minimization ✅ COMPLETE
 
 ### Objective
 Remove steric clashes and relax the initial structure to a local energy minimum.
@@ -195,9 +228,41 @@ Get-Content em/glycine_charmm_em.log | Select-String "Fmax"
 
 **Estimated Runtime:** ~1-2 hours total (30 minutes per system on modern hardware)
 
+### Actual Results (Completed 2026-01-26)
+
+**MDP File Created:**
+- ✅ `mdp/em.mdp` - Steepest descent minimization parameters
+
+**TPR Files Generated:**
+- ✅ `em/glycine_charmm_em.tpr`
+- ✅ `em/glycine_amber_em.tpr`
+- ✅ `em/glygly_charmm_em.tpr`
+- ✅ `em/glygly_amber_em.tpr`
+
+**Energy Minimization Results:**
+
+| System | Steps | Final Epot (kJ/mol) | Fmax (kJ/mol/nm) | Status |
+|--------|-------|---------------------|------------------|--------|
+| glycine_charmm_em | 605 | -2.53×10⁵ | 856 | ✅ Converged |
+| glycine_amber_em | 358 | -2.63×10⁵ | 817 | ✅ Converged |
+| glygly_charmm_em | 462 | -2.50×10⁵ | 925 | ✅ Converged |
+| glygly_amber_em | 533 | -2.62×10⁵ | 974 | ✅ Converged |
+
+**Output Files Created:**
+- ✅ `em/*_em.gro` - Minimized structures (4 files)
+- ✅ `em/*_em.edr` - Energy data files (4 files)
+- ✅ `em/*_em.log` - Log files (4 files)
+- ✅ `em/*_em.trr` - Trajectory files (4 files)
+
+**Observations:**
+- All systems converged quickly (<700 steps each)
+- Final Fmax values all well below 1000 kJ/mol/nm threshold
+- AMBER systems slightly more negative potential energy than CHARMM (expected due to different parameterization)
+- Atom name mismatch warnings during grompp (cosmetic only - GROMACS uses topology names)
+
 ---
 
-## Substep 1.6: NVT Equilibration (Temperature Equilibration)
+## Substep 1.6: NVT Equilibration (Temperature Equilibration) ✅ COMPLETE
 
 ### Objective
 Equilibrate the system at target temperature (300 K or 350 K) while keeping volume constant.
@@ -309,6 +374,44 @@ echo 16 | gmx energy -f nvt/glycine_charmm_300K_nvt.edr -o nvt/glycine_charmm_30
 - Verification report confirming temperature equilibration
 
 **Estimated Runtime:** ~4 hours total (30 minutes per system on modern hardware)
+
+### Actual Results (Completed 2026-01-30)
+
+**MDP Files Created:**
+- ✅ `mdp/nvt_300K.mdp` - NVT equilibration at 300 K
+- ✅ `mdp/nvt_350K.mdp` - NVT equilibration at 350 K
+
+**TPR Files Generated:**
+- ✅ All 8 TPR files created successfully
+
+**NVT Equilibration Results:**
+
+| System | Target (K) | Actual (K) | Error | RMSD (K) | Status |
+|--------|------------|------------|-------|----------|--------|
+| glycine_charmm_300K | 300 | 299.75 | -0.25 K | 2.91 | ✅ Equilibrated |
+| glycine_charmm_350K | 350 | 349.59 | -0.41 K | 3.46 | ✅ Equilibrated |
+| glycine_amber_300K | 300 | 299.89 | -0.11 K | 2.92 | ✅ Equilibrated |
+| glycine_amber_350K | 350 | 349.64 | -0.36 K | 3.45 | ✅ Equilibrated |
+| glygly_charmm_300K | 300 | 299.91 | -0.09 K | 2.93 | ✅ Equilibrated |
+| glygly_charmm_350K | 350 | 349.93 | -0.07 K | 3.43 | ✅ Equilibrated |
+| glygly_amber_300K | 300 | 299.69 | -0.31 K | 2.92 | ✅ Equilibrated |
+| glygly_amber_350K | 350 | 349.72 | -0.28 K | 3.44 | ✅ Equilibrated |
+
+**Output Files Created (per system):**
+- `nvt/*_nvt.gro` - Final equilibrated structures (8 files)
+- `nvt/*_nvt.cpt` - Checkpoint files for NPT continuation (8 files)
+- `nvt/*_nvt.edr` - Energy data files (8 files)
+- `nvt/*_nvt.log` - Log files (8 files)
+- `nvt/*_nvt.tpr` - Run input files (8 files)
+- `nvt/*_nvt.xtc` - Trajectory files (8 files)
+
+**Observations:**
+- All 8 systems equilibrated to within ±0.5 K of target temperature
+- V-rescale thermostat (τ = 0.1 ps) achieved excellent temperature control
+- 100 ps equilibration time was sufficient for all systems
+- Temperature RMSD ~3 K (expected for ~16,000 atom systems)
+- No drift observed in any system
+- Runtime: ~3-8 minutes per system
 
 ---
 
