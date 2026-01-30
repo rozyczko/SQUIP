@@ -1,0 +1,49 @@
+; npt_300K.mdp - NPT equilibration at 300 K and 1 bar
+; Constant Number, Pressure, and Temperature
+
+integrator  = md            ; Leap-frog MD
+dt          = 0.002         ; 2 fs time step
+nsteps      = 50000         ; 100 ps (50000 * 0.002)
+
+; Output control
+nstlog      = 500           ; Log every 1 ps
+nstenergy   = 500           ; Energy every 1 ps
+nstxout-compressed = 1000   ; Coordinates every 2 ps
+
+; Neighbor searching
+cutoff-scheme = Verlet
+nstlist     = 10
+rlist       = 1.2
+
+; Electrostatics
+coulombtype = PME
+rcoulomb    = 1.2
+pme_order   = 4
+fourierspacing = 0.12
+
+; Van der Waals
+vdwtype     = Cut-off
+rvdw        = 1.2
+
+; Temperature coupling
+tcoupl      = V-rescale     ; Modified Berendsen thermostat
+tc-grps     = System        ; Single coupling group
+tau_t       = 0.1           ; Time constant (ps)
+ref_t       = 300           ; Target temperature (K)
+
+; Pressure coupling
+pcoupl      = Parrinello-Rahman    ; Barostat
+pcoupltype  = isotropic            ; Uniform scaling
+tau_p       = 2.0                  ; Time constant (ps)
+ref_p       = 1.0                  ; Target pressure (bar)
+compressibility = 4.5e-5           ; Water compressibility (bar^-1)
+
+; Velocity generation
+gen_vel     = no            ; Continue from NVT
+
+; Periodic boundary conditions
+pbc         = xyz
+
+; Constraints
+constraints = h-bonds
+constraint_algorithm = LINCS

@@ -2,7 +2,7 @@
 ;	File 'mdout.mdp' was generated
 ;	By user: piotrrozyczko (-1)
 ;	On host: CIN-959369
-;	At date: Mon Jan 26 09:52:17 2026
+;	At date: Fri Jan 30 10:18:59 2026
 ;
 ;	Created by:
 ;	                     :-) GROMACS - gmx grompp, 2021.5 (-:
@@ -11,7 +11,7 @@
 ;	Data prefix:  c:\util\gromacs\
 ;	Working dir:  C:\projects\piotr\SQUIP
 ;	Command line:
-;	  gmx grompp -f mdp/nvt_350K.mdp -c em/glygly_amber_em.gro -r em/glygly_amber_em.gro -p topologies/glygly_amber99sb.top -o nvt/glygly_amber_350K_nvt.tpr -maxwarn 2
+;	  gmx grompp -f mdp/npt_350K.mdp -c nvt/glygly_amber_350K_nvt.gro -t nvt/glygly_amber_350K_nvt.cpt -p topologies/glygly_amber99sb.top -o npt/glygly_amber_350K_npt.tpr -maxwarn 1
 
 ; VARIOUS PREPROCESSING OPTIONS
 ; Preprocessor information: use cpp syntax.
@@ -141,13 +141,13 @@ tc-grps                  = System
 tau_t                    = 0.1
 ref_t                    = 350
 ; pressure coupling     
-pcoupl                   = no
-pcoupltype               = Isotropic
+pcoupl                   = Parrinello-Rahman
+pcoupltype               = isotropic
 nstpcouple               = -1
 ; Time constant (ps), compressibility (1/bar) and reference P (bar)
-tau-p                    = 1
-compressibility          = 
-ref-p                    = 
+tau_p                    = 2.0
+compressibility          = 4.5e-5
+ref_p                    = 1.0
 ; Scaling of reference coordinates, No, All or COM
 refcoord-scaling         = No
 
@@ -167,9 +167,9 @@ annealing-time           =
 annealing-temp           = 
 
 ; GENERATE VELOCITIES FOR STARTUP RUN
-gen_vel                  = yes
-gen_temp                 = 350
-gen_seed                 = -1
+gen_vel                  = no
+gen-temp                 = 300
+gen-seed                 = -1
 
 ; OPTIONS FOR BONDS    
 constraints              = h-bonds
