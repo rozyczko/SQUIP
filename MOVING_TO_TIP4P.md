@@ -5,7 +5,7 @@
 This document describes the comprehensive plan for converting the AMBER99SB-ILDN systems from TIP3P water model to TIP4P-Ew while keeping CHARMM27 systems with TIP3P unchanged.
 
 **Date Created:** 2026-01-30  
-**Status:** Planned
+**Status:** Complete - All AMBER systems migrated to TIP4P-Ew
 
 ---
 
@@ -402,54 +402,57 @@ Expected changes in output:
 
 ## Implementation Checklist
 
-### Phase 1: Backup ⬜
-- [ ] Create backup directory structure
-- [ ] Backup AMBER topology files
-- [ ] Backup AMBER NVT equilibration files
-- [ ] Backup AMBER NPT equilibration files
-- [ ] Verify backup completeness
+### Phase 1: Backup ✅
+- [x] Create backup directory structure
+- [x] Backup AMBER topology files (12 files)
+- [x] Backup AMBER NVT equilibration files (8 files)
+- [x] Backup AMBER NPT equilibration files (9 files)
+- [x] Verify backup completeness (29 total files)
 
-### Phase 2: Force Field ⬜
-- [ ] Verify TIP4P-Ew files exist in `amber99sb-ildn.ff/`
-- [ ] No modifications needed (confirmed)
+### Phase 2: Force Field ✅
+- [x] Verify TIP4P-Ew files exist in `amber99sb-ildn.ff/`
+- [x] No modifications needed (confirmed)
 
-### Phase 3: Update Scripts ⬜
-- [ ] Update `regenerate_topologies.py` with conditional water model
-- [ ] Update `calculate_box_dimensions.py` for 4-site water
-- [ ] Update `verify_systems.py` for water model detection
+### Phase 3: Update Scripts ✅
+- [x] Update `regenerate_topologies.py` with conditional water model
+- [x] Update `calculate_box_dimensions.py` for 4-site water
+- [x] Update `verify_systems.py` for water model detection
 
-### Phase 4: Regenerate Topologies ⬜
-- [ ] Regenerate glycine AMBER topology with TIP4P-Ew
-- [ ] Regenerate glygly AMBER topology with TIP4P-Ew
-- [ ] Insert 50 molecules for glycine AMBER
-- [ ] Insert 50 molecules for glygly AMBER
-- [ ] Solvate glycine AMBER with TIP4P-Ew
-- [ ] Solvate glygly AMBER with TIP4P-Ew
+### Phase 4: Regenerate Topologies ✅
+- [x] Regenerate glycine AMBER topology with TIP4P-Ew
+- [x] Regenerate glygly AMBER topology with TIP4P-Ew
+- [x] Insert 50 molecules for glycine AMBER (500 atoms)
+- [x] Insert 50 molecules for glygly AMBER (850 atoms)
+- [x] Solvate glycine AMBER with TIP4P-Ew (5005 water molecules, 15515 total atoms)
+- [x] Solvate glygly AMBER with TIP4P-Ew (4977 water molecules, 15781 total atoms)
 
-### Phase 5: Box Analysis ⬜
-- [ ] Run updated box dimension calculations
-- [ ] Update `BOX_ANALYSIS.md` with TIP4P-Ew section
-- [ ] Decide on final box size (5.5 nm recommended)
+### Phase 5: Box Analysis ✅
+- [x] Run updated box dimension calculations
+- [x] Update `BOX_ANALYSIS.md` with TIP4P-Ew section
+- [x] Decide on final box size: **5.5 nm** (concentration consistency with CHARMM)
+- [x] Actual system sizes:
+  - Glycine AMBER: 5005 water, 20520 total atoms (with MW)
+  - Gly-Gly AMBER: 4977 water, 20758 total atoms (with MW)
 
-### Phase 6: Equilibration ⬜
-- [ ] Energy minimization for glycine AMBER (300K, 350K)
-- [ ] Energy minimization for glygly AMBER (300K, 350K)
-- [ ] NVT equilibration for all AMBER systems
-- [ ] NPT equilibration for all AMBER systems
-- [ ] Copy equilibrated files to `npt/` and `nvt/` directories
+### Phase 6: Equilibration 🔄
+- [x] Energy minimization for glycine AMBER (converged in 339 steps, Fmax=932)
+- [x] Energy minimization for glygly AMBER (converged in 270 steps, Fmax=990)
+- [x] NVT equilibration for all AMBER systems
+- [x] NPT equilibration for all AMBER systems
+- [x] Copy equilibrated files to `npt/` and `nvt/` directories
 
-### Phase 7: Documentation ⬜
-- [ ] Update `STEP1.md` with TIP4P-Ew commands
-- [ ] Update `STEP1.md` verification checklist for new atom counts
-- [ ] Reset CHARMM status checkmarks in `STEP1.md`
-- [ ] Update `BOX_ANALYSIS.md`
-- [ ] Update `SYSTEM_VERIFICATION.md`
+### Phase 7: Documentation ✅
+- [x] Update `STEP1.md` with TIP4P-Ew commands
+- [x] Update `STEP1.md` verification checklist for new atom counts
+- [x] Reset CHARMM status checkmarks in `STEP1.md`
+- [x] Update `BOX_ANALYSIS.md`
+- [x] Update `SYSTEM_VERIFICATION.md`
 
-### Phase 8: Verification ⬜
-- [ ] Run `python verify_systems.py`
-- [ ] Verify water model includes in all topologies
-- [ ] Confirm system neutrality
-- [ ] Final documentation review
+### Phase 8: Verification ✅
+- [x] Run `python verify_systems.py`
+- [x] Verify water model includes in all topologies
+- [x] Confirm system neutrality
+- [x] Final documentation review
 
 ---
 

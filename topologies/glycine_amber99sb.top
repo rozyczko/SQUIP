@@ -1,19 +1,19 @@
 ;
 ;	File 'topologies/glycine_amber99sb.top' was generated
-;	By user: piotrrozyczko (-1)
-;	On host: CIN-959369
-;	At date: Wed Jan 21 14:20:49 2026
+;	By user: piotr (-1)
+;	On host: WORKSTATION
+;	At date: Fri Jan 30 17:36:52 2026
 ;
 ;	This is a standalone topology file
 ;
 ;	Created by:
 ;	                    :-) GROMACS - gmx pdb2gmx, 2021.5 (-:
 ;	
-;	Executable:   c:\util\gromacs\\bin\gmx.exe
-;	Data prefix:  c:\util\gromacs\
-;	Working dir:  C:\projects\piotr\SQUIP
+;	Executable:   C:\util\gromacs\bin\gmx.exe
+;	Data prefix:  C:\util\gromacs
+;	Working dir:  C:\Users\piotr\projects\other\SQUIP
 ;	Command line:
-;	  gmx pdb2gmx -f structures/glycine_zw_amber.pdb -o topologies/glycine_amber99sb.gro -p topologies/glycine_amber99sb.top -ff amber99sb-ildn -water tip3p
+;	  gmx pdb2gmx -f structures/glycine_zw_amber.pdb -o topologies/glycine_amber99sb.gro -p topologies/glycine_amber99sb.top -i topologies/glycine_amber_posre.itp -ff amber99sb-ildn -water select -ignh
 ;	Force field was read from current directory or a relative path - path added.
 ;
 
@@ -110,11 +110,11 @@ Protein             3
 
 ; Include Position restraint file
 #ifdef POSRES
-#include "posre.itp"
+#include "topologies/glycine_amber_posre.itp"
 #endif
 
 ; Include water topology
-#include "./amber99sb-ildn.ff/tip3p.itp"
+#include "./amber99sb-ildn.ff/tip4pew.itp"
 
 #ifdef POSRES_WATER
 ; Position restraint for each water oxygen
@@ -128,9 +128,9 @@ Protein             3
 
 [ system ]
 ; Name
-Glycine zwitterion for AMBER force field
+Glycine zwitterion for AMBER force field in water
 
 [ molecules ]
 ; Compound        #mols
-Protein            50
-SOL              5109
+Protein             1
+SOL              5005

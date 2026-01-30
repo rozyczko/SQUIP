@@ -1,24 +1,24 @@
 ;
 ;	File 'topologies/glygly_amber99sb.top' was generated
-;	By user: piotrrozyczko (-1)
-;	On host: CIN-959369
-;	At date: Wed Jan 21 14:15:39 2026
+;	By user: piotr (-1)
+;	On host: WORKSTATION
+;	At date: Fri Jan 30 17:37:04 2026
 ;
 ;	This is a standalone topology file
 ;
 ;	Created by:
 ;	                    :-) GROMACS - gmx pdb2gmx, 2021.5 (-:
 ;	
-;	Executable:   c:\util\gromacs\\bin\gmx.exe
-;	Data prefix:  c:\util\gromacs\
-;	Working dir:  C:\projects\piotr\SQUIP
+;	Executable:   C:\util\gromacs\bin\gmx.exe
+;	Data prefix:  C:\util\gromacs
+;	Working dir:  C:\Users\piotr\projects\other\SQUIP
 ;	Command line:
-;	  gmx pdb2gmx -f structures/glygly_zw_charmm.pdb -o topologies/glygly_amber99sb.gro -p topologies/glygly_amber99sb.top -ff amber99sb-ildn -water tip3p
-;	Force field was read from the standard GROMACS share directory.
+;	  gmx pdb2gmx -f structures/glygly_zw_charmm.pdb -o topologies/glygly_amber99sb.gro -p topologies/glygly_amber99sb.top -i topologies/glygly_amber_posre.itp -ff amber99sb-ildn -water select -ignh
+;	Force field was read from current directory or a relative path - path added.
 ;
 
 ; Include forcefield parameters
-#include "amber99sb-ildn.ff/forcefield.itp"
+#include "./amber99sb-ildn.ff/forcefield.itp"
 
 [ moleculetype ]
 ; Name            nrexcl
@@ -171,11 +171,11 @@ Protein_chain_A     3
 
 ; Include Position restraint file
 #ifdef POSRES
-#include "posre.itp"
+#include "topologies/glygly_amber_posre.itp"
 #endif
 
 ; Include water topology
-#include "amber99sb-ildn.ff/tip3p.itp"
+#include "./amber99sb-ildn.ff/tip4pew.itp"
 
 #ifdef POSRES_WATER
 ; Position restraint for each water oxygen
@@ -185,13 +185,13 @@ Protein_chain_A     3
 #endif
 
 ; Include topology for ions
-#include "amber99sb-ildn.ff/ions.itp"
+#include "./amber99sb-ildn.ff/ions.itp"
 
 [ system ]
 ; Name
-Gly-Gly zwitterionic dipeptide for CHARMM27 force field
+Gly-Gly zwitterionic dipeptide for CHARMM27 force field in water
 
 [ molecules ]
 ; Compound        #mols
-Protein_chain_A    50
-SOL              4986
+Protein_chain_A     1
+SOL              4977

@@ -9,6 +9,8 @@ This document provides a detailed implementation plan for **Step 1: System Prepa
 
 > **Note**: Originally specified CHARMM36m and AMBER ff19SB. These have been substituted with **CHARMM27** and **AMBER99SB-ILDN** which are available in the GROMACS installation and properly support zwitterionic amino acids.
 
+> **Water Models**: CHARMM27 uses **TIP3P** (3-site, native to CHARMM). AMBER99SB-ILDN uses **TIP4P-Ew** (4-site Ewald-optimized) for improved accuracy with PME electrostatics. See [MOVING_TO_TIP4P.md](MOVING_TO_TIP4P.md) for migration details.
+
 ---
 
 ## Substep 1.1: Obtain and Prepare Initial Molecular Structures
@@ -68,12 +70,13 @@ Create GROMACS topology files (.top) for each molecule using CHARMM36m and AMBER
 2. **AMBER99SB-ILDN Topologies** (substitute for ff19SB)
    ```bash
    # For glycine - uses custom ZGLY residue in local amber99sb-ildn.ff/
-   gmx pdb2gmx -f structures/glycine_zw_amber.pdb -o topologies/glycine_amber99sb.gro \
-        -p topologies/glycine_amber99sb.top -ff amber99sb-ildn -water tip3p
+   # TIP4P-Ew selected interactively (option 3) via -water select
+   echo "3" | gmx pdb2gmx -f structures/glycine_zw_amber.pdb -o topologies/glycine_amber99sb.gro \
+        -p topologies/glycine_amber99sb.top -ff amber99sb-ildn -water select
    
    # For Gly-Gly - works natively (NGLY for first residue, CGLY for last)
-   gmx pdb2gmx -f structures/glygly_zw_charmm.pdb -o topologies/glygly_amber99sb.gro \
-        -p topologies/glygly_amber99sb.top -ff amber99sb-ildn -water tip3p
+   echo "3" | gmx pdb2gmx -f structures/glygly_zw_charmm.pdb -o topologies/glygly_amber99sb.gro \
+        -p topologies/glygly_amber99sb.top -ff amber99sb-ildn -water select
    ```
 
 3. **Force Field Configuration**
@@ -113,10 +116,14 @@ Create simulation boxes containing ~50 solute molecules (glycine or Gly-Gly) to 
    gmx insert-molecules -ci glycine_charmm.gro -nmol 50 -box 6 6 6 -o glycine_50mol.gro
    ```
 
-3. **Solvate with TIP3P Water**
+3. **Solvate with Water**
    ```bash
    # Add water molecules to fill the box
+   # For CHARMM27 (TIP3P): use spc216.gro
    gmx solvate -cp glycine_50mol.gro -cs spc216.gro -o glycine_solvated.gro -p glycine_charmm.top
+   
+   # For AMBER99SB-ILDN (TIP4P-Ew): use tip4p.gro from GROMACS share
+   gmx solvate -cp glycine_50mol.gro -cs $GMXDATA/top/tip4p.gro -o glycine_solvated.gro -p glycine_amber.top
    ```
 
 4. **Verify System Size**
@@ -421,17 +428,31 @@ Equilibrate the system at target pressure (1 bar) to achieve proper density befo
 - Equilibration analysis plots (temperature, pressure, density)
 
 ### Verification Checklist
-- [x] All systems contain ~50 solute molecules
-- [x] System sizes are 15,000-20,000 atoms (~15,800-16,000 atoms each)
-- [x] All systems are electrically neutral (zwitterions, no ions needed)
-- [x] Energy minimization converged (Fmax < 1000 kJ/mol/nm)
-- [x] Temperature equilibration successful (T within ±0.5 K of target)
-- [x] Pressure equilibration successful (P within ±12 bar of 1 bar target)
-- [x] Density stabilized to reasonable values (998-1017 kg/m³ at 300K, 950-967 kg/m³ at 350K)
+
+**CHARMM27 Systems (TIP3P):**
+- [ ] All CHARMM systems contain ~50 solute molecules
+- [ ] CHARMM system sizes are 15,000-16,500 atoms each
+- [ ] CHARMM systems are electrically neutral
+- [ ] CHARMM energy minimization converged
+- [ ] CHARMM temperature equilibration successful
+- [ ] CHARMM pressure equilibration successful
+- [ ] CHARMM density stabilized
+
+**AMBER99SB-ILDN Systems (TIP4P-Ew):**
+- [x] All AMBER systems contain 50 solute molecules
+- [x] AMBER system sizes are ~20,500-21,000 atoms each (4-site TIP4P-Ew water)
+- [x] AMBER systems are electrically neutral (zwitterions, no ions needed)
+- [x] AMBER energy minimization converged (Fmax < 1000 kJ/mol/nm)
+- [x] AMBER temperature equilibration successful (T within ±0.5 K of target)
+- [x] AMBER pressure equilibration successful (P within ±12 bar of 1 bar target)
+- [x] AMBER density stabilized to reasonable values
+
+**General:**
 - [x] No errors in GROMACS log files
 - [x] Documentation complete for all parameter choices
 
-**Step 1 Complete (2026-01-30)** - All 8 systems ready for Step 2: Production MD
+**AMBER Step 1 Complete (TIP4P-Ew migration)** - AMBER systems ready for Step 2: Production MD
+**CHARMM Step 1 Pending** - Awaiting verification after TIP4P-Ew migration
 
 ### Directory Structure Recommendation
 ```

@@ -30,6 +30,9 @@ def run_pdb2gmx(mol_name, pdb_file, force_field):
     print(f"  Input: {pdb_file}")
     print(f"  Output: {output_prefix}.gro, {output_prefix}.top")
     
+    # Use TIP4P-Ew for AMBER, TIP3P for CHARMM
+    water_model = 'tip4pew' if 'amber' in ff_name else 'tip3p'
+    
     cmd = [
         GMX, 'pdb2gmx',
         '-f', pdb_file,
@@ -37,9 +40,11 @@ def run_pdb2gmx(mol_name, pdb_file, force_field):
         '-p', f'{output_prefix}.top',
         '-i', f'{output_prefix}_posre.itp',
         '-ff', ff_name,
-        '-water', 'tip3p',
+        '-water', water_model,
         '-ignh'  # Ignore hydrogen atoms in input
     ]
+    
+    print(f"  Water model: {water_model}")
     
     try:
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)

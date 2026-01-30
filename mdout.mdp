@@ -1,17 +1,17 @@
 ;
 ;	File 'mdout.mdp' was generated
-;	By user: piotrrozyczko (-1)
-;	On host: CIN-959369
-;	At date: Fri Jan 30 14:52:32 2026
+;	By user: piotr (-1)
+;	On host: WORKSTATION
+;	At date: Fri Jan 30 18:16:47 2026
 ;
 ;	Created by:
 ;	                     :-) GROMACS - gmx grompp, 2021.5 (-:
 ;	
-;	Executable:   c:\util\gromacs\\bin\gmx.exe
-;	Data prefix:  c:\util\gromacs\
-;	Working dir:  C:\projects\piotr\SQUIP
+;	Executable:   C:\util\gromacs\bin\gmx.exe
+;	Data prefix:  C:\util\gromacs
+;	Working dir:  C:\Users\piotr\projects\other\SQUIP
 ;	Command line:
-;	  gmx grompp -f mdp/nve_test.mdp -c nvt/glycine_charmm_300K_nvt.gro -t nvt/glycine_charmm_300K_nvt.cpt -p topologies/glycine_charmm27.top -o nve_test/glycine_charmm_300K_nve.tpr
+;	  gmx grompp -f mdp/npt_350K.mdp -c nvt_new/glygly_amber_350K_nvt.gro -t nvt_new/glygly_amber_350K_nvt.cpt -p topologies/glygly_amber.top -o npt_new/glygly_amber_350K_npt.tpr
 
 ; VARIOUS PREPROCESSING OPTIONS
 ; Preprocessor information: use cpp syntax.
@@ -25,7 +25,7 @@ integrator               = md
 ; Start time and timestep in ps
 tinit                    = 0
 dt                       = 0.002
-nsteps                   = 5000
+nsteps                   = 50000
 ; For exact run continuation or redoing part of a run
 init-step                = 0
 ; Part index is updated automatically on checkpointing (keeps files separate)
@@ -65,11 +65,11 @@ nstxout                  = 0
 nstvout                  = 0
 nstfout                  = 0
 ; Output frequency for energies to log file and energy file
-nstlog                   = 100
+nstlog                   = 500
 nstcalcenergy            = 100
-nstenergy                = 100
+nstenergy                = 500
 ; Output frequency and precision for .xtc file
-nstxout-compressed       = 500
+nstxout-compressed       = 1000
 compressed-x-precision   = 1000
 ; This selects the subset of atoms for the compressed
 ; trajectory file. You can select multiple groups. By
@@ -131,23 +131,23 @@ implicit-solvent         = no
 
 ; OPTIONS FOR WEAK COUPLING ALGORITHMS
 ; Temperature coupling  
-tcoupl                   = no
+tcoupl                   = V-rescale
 nsttcouple               = -1
 nh-chain-length          = 10
 print-nose-hoover-chain-variables = no
 ; Groups to couple separately
-tc-grps                  = 
+tc-grps                  = System
 ; Time constant (ps) and reference temperature (K)
-tau-t                    = 
-ref-t                    = 
+tau_t                    = 0.1
+ref_t                    = 350
 ; pressure coupling     
-pcoupl                   = no
-pcoupltype               = Isotropic
+pcoupl                   = Parrinello-Rahman
+pcoupltype               = isotropic
 nstpcouple               = -1
 ; Time constant (ps), compressibility (1/bar) and reference P (bar)
-tau-p                    = 1
-compressibility          = 
-ref-p                    = 
+tau_p                    = 2.0
+compressibility          = 4.5e-5
+ref_p                    = 1.0
 ; Scaling of reference coordinates, No, All or COM
 refcoord-scaling         = No
 
