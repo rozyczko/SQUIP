@@ -1,13 +1,13 @@
 # Production Run Cost Estimate
 
-## Benchmark Results (Glycine AMBER 300K)
+## Measured Benchmark Results (Glycine 300K, 20 ns)
 
-| Metric | Value |
-|--------|-------|
-| Duration | 20 ns |
-| Wall time | 4h 44m (4.74 hours) |
-| Performance | 101.4 ns/day |
-| Trajectory size | 140.7 GB |
+| Metric | AMBER (TIP4P-Ew) | CHARMM (TIP3P) |
+|--------|------------------|----------------|
+| Atoms | 20,740 | 15,812 |
+| Wall time | 4h 44m (4.74 h) | 3h 32m (3.53 h) |
+| Performance | 101.4 ns/day | 135.8 ns/day |
+| Trajectory size | 140.7 GB | 112.6 GB |
 
 **Hardware**: Intel Xeon W-2265 (12 cores @ 3.5 GHz), AVX-512, CPU-only
 
@@ -15,30 +15,34 @@
 
 ## Time Estimates (Sequential)
 
-| System | Atoms | Est. Time/run | Runs (2 temps) | Total Time |
-|--------|-------|---------------|----------------|------------|
-| Glycine AMBER | 20,740 | 4.7 h | 2 | 9.5 h |
-| Glycine CHARMM | 15,812 | 3.6 h | 2 | 7.2 h |
-| GlyGly AMBER | 21,086 | 4.9 h | 2 | 9.8 h |
-| GlyGly CHARMM | 16,070 | 3.7 h | 2 | 7.4 h |
-| **Total** | | | **8** | **~34 hours** |
+| System | Atoms | Time/run | Runs (2 temps) | Total Time |
+|--------|-------|----------|----------------|------------|
+| Glycine AMBER | 20,740 | **4.74 h** ✓ | 2 | 9.5 h |
+| Glycine CHARMM | 15,812 | **3.53 h** ✓ | 2 | 7.1 h |
+| GlyGly AMBER | 21,086 | ~4.8 h | 2 | 9.6 h |
+| GlyGly CHARMM | 16,070 | ~3.6 h | 2 | 7.2 h |
+| **Total** | | | **8** | **~33 hours** |
+
+✓ = measured values
 
 ### Time Scaling Notes
-- CHARMM (TIP3P, 3-site water) runs ~25% faster than AMBER (TIP4P-Ew, 4-site water)
+- CHARMM (TIP3P, 3-site water) runs **34% faster** than AMBER (TIP4P-Ew, 4-site water)
 - Performance scales roughly linearly with atom count for systems of this size
-- Estimates based on measured 101.4 ns/day for glycine AMBER (20,740 atoms)
+- GlyGly estimates based on atom count scaling from measured glycine runs
 
 ---
 
 ## Storage Estimates
 
-| System | Atoms | Est. Size/run | Runs (2 temps) | Total |
-|--------|-------|---------------|----------------|-------|
-| Glycine AMBER | 20,740 | 141 GB | 2 | 282 GB |
-| Glycine CHARMM | 15,812 | 107 GB | 2 | 214 GB |
-| GlyGly AMBER | 21,086 | 143 GB | 2 | 286 GB |
-| GlyGly CHARMM | 16,070 | 109 GB | 2 | 218 GB |
+| System | Atoms | Size/run | Runs (2 temps) | Total |
+|--------|-------|----------|----------------|-------|
+| Glycine AMBER | 20,740 | **141 GB** ✓ | 2 | 282 GB |
+| Glycine CHARMM | 15,812 | **113 GB** ✓ | 2 | 226 GB |
+| GlyGly AMBER | 21,086 | ~143 GB | 2 | 286 GB |
+| GlyGly CHARMM | 16,070 | ~115 GB | 2 | 230 GB |
 | **Total** | | | **8** | **~1.0 TB** |
+
+✓ = measured values
 
 ### Storage Breakdown per Run
 | File | Size |
@@ -55,10 +59,16 @@
 
 | Resource | Estimate |
 |----------|----------|
-| **Total compute time** | ~34 hours (1.4 days) sequential |
+| **Total compute time** | ~33 hours (1.4 days) sequential |
 | **Total storage** | ~1.0 TB |
-| **With 2 concurrent runs** | ~17 hours |
-| **With 4 concurrent runs** | ~8.5 hours |
+| **With 2 concurrent runs** | ~16.5 hours |
+| **With 4 concurrent runs** | ~8 hours |
+
+### Measured Performance Summary
+| Force Field | Performance | Speedup vs AMBER |
+|-------------|-------------|------------------|
+| AMBER (TIP4P-Ew) | 101.4 ns/day | 1.0× |
+| CHARMM (TIP3P) | 135.8 ns/day | **1.34×** |
 
 ---
 

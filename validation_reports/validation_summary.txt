@@ -1,0 +1,12 @@
+SQUIP Production Validation Summary
+Generated: Sun Feb  1 09:56:10 AM CET 2026
+========================================
+
+glycine/amber99sb/300K: PASS
+glycine/amber99sb/350K: MISSING
+glycine/charmm27/300K: PASS
+glycine/charmm27/350K: MISSING
+glygly/amber99sb/300K: MISSING
+glygly/amber99sb/350K: MISSING
+glygly/charmm27/300K: MISSING
+glygly/charmm27/350K: MISSING
