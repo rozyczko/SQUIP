@@ -5,7 +5,7 @@ This document provides a detailed implementation plan for **Step 2: Production M
 
 **Timeline**: Week 2-3  
 **Input**: 8 fully equilibrated systems from Step 1 (NPT equilibrated)  
-**Output**: Production trajectories with 10 fs time resolution for S(q,ω) calculation
+**Output**: Production trajectories with 30 fs time resolution for S(q,ω) calculation
 
 ---
 
@@ -47,7 +47,7 @@ Create simulation parameter files optimized for QENS-relevant trajectory output.
 
 ### Key Parameters for QENS Analysis
 
-1. **Trajectory Saving Frequency**: Every 10 fs (critical for picosecond dynamics)
+1. **Trajectory Saving Frequency**: Every 20 fs (reduced-frequency) or 30 fs (compact) for PoC storage limits
 2. **Simulation Length**: 10-20 ns (balance between statistics and storage)
 3. **Ensemble**: NPT (matches experimental conditions)
 4. **Thermostat**: V-rescale (minimal dynamic perturbation)
@@ -55,11 +55,11 @@ Create simulation parameter files optimized for QENS-relevant trajectory output.
 
 ### Implementation Steps
 
-1. **Create Production MDP for 300 K**
+1. **Create Production MDP for 300 K (Reduced Frequency)**
    ```bash
    cat > mdp/prod_300K.mdp << 'EOF'
    ; prod_300K.mdp - Production MD at 300 K for QENS analysis
-   ; High-frequency trajectory output for S(q,ω) calculation
+    ; Reduced-frequency trajectory output for PoC S(q,ω) calculation
    
    ; Run parameters
    integrator  = md            ; Leap-frog integrator
@@ -71,7 +71,7 @@ Create simulation parameter files optimized for QENS-relevant trajectory output.
    nstenergy   = 5000          ; Energy every 10 ps
    nstxout     = 0             ; No full-precision coordinates (use compressed)
    nstvout     = 0             ; No velocities to main trajectory
-   nstxout-compressed = 5      ; Compressed coords every 10 fs (5 × 2 fs)
+    nstxout-compressed = 10     ; Compressed coords every 20 fs (10 × 2 fs)
    compressed-x-grps = System  ; Save all atoms
    
    ; Neighbor searching
@@ -123,11 +123,11 @@ Create simulation parameter files optimized for QENS-relevant trajectory output.
    EOF
    ```
 
-2. **Create Production MDP for 350 K**
+2. **Create Production MDP for 350 K (Reduced Frequency)**
    ```bash
    cat > mdp/prod_350K.mdp << 'EOF'
-   ; prod_350K.mdp - Production MD at 350 K for QENS analysis
-   ; High-frequency trajectory output for S(q,ω) calculation
+    ; prod_350K.mdp - Production MD at 350 K for QENS analysis
+    ; Reduced-frequency trajectory output for PoC S(q,ω) calculation
    
    ; Run parameters
    integrator  = md
@@ -139,7 +139,7 @@ Create simulation parameter files optimized for QENS-relevant trajectory output.
    nstenergy   = 5000
    nstxout     = 0
    nstvout     = 0
-   nstxout-compressed = 5      ; Every 10 fs
+    nstxout-compressed = 10     ; Every 20 fs
    compressed-x-grps = System
    
    ; Neighbor searching
@@ -191,11 +191,150 @@ Create simulation parameter files optimized for QENS-relevant trajectory output.
    EOF
    ```
 
+3. **Create Compact Production MDP for 300 K (PoC)**
+    ```bash
+    cat > mdp/prod_300K_compact.mdp << 'EOF'
+    ; prod_300K_compact.mdp - Production MD at 300 K with reduced trajectory size
+    ; Output every 30 fs instead of 10 fs to reduce storage by ~3x
+    ; Target: ~50 GB trajectory instead of ~140 GB
+   
+    ; Run parameters
+    integrator  = md            ; Leap-frog integrator
+    dt          = 0.002         ; 2 fs timestep
+    nsteps      = 10000000      ; 20 ns (10,000,000 × 2 fs)
+   
+    ; Output control - REDUCED FREQUENCY for smaller files
+    nstlog      = 5000          ; Log every 10 ps
+    nstenergy   = 5000          ; Energy every 10 ps
+    nstxout     = 0             ; No full-precision coordinates
+    nstvout     = 0             ; No velocities
+    nstxout-compressed = 15     ; Compressed coords every 30 fs (15 × 2 fs)
+    compressed-x-grps = System  ; Save all atoms
+   
+    ; Neighbor searching
+    cutoff-scheme = Verlet
+    nstlist     = 20            ; Update neighbor list every 40 fs
+    rlist       = 1.2           ; nm
+   
+    ; Electrostatics (PME)
+    coulombtype = PME
+    rcoulomb    = 1.2           ; nm
+    pme_order   = 4             ; Cubic interpolation
+    fourierspacing = 0.12       ; nm
+   
+    ; Van der Waals
+    vdwtype     = Cut-off
+    vdw-modifier = Potential-shift
+    rvdw        = 1.2           ; nm
+    DispCorr    = EnerPres      ; Long-range dispersion correction
+   
+    ; Temperature coupling
+    tcoupl      = V-rescale     ; Stochastic velocity rescaling
+    tc-grps     = System        ; Single coupling group
+    tau_t       = 0.5           ; Relaxed coupling (ps)
+    ref_t       = 300           ; Target temperature (K)
+   
+    ; Pressure coupling
+    pcoupl          = Parrinello-Rahman
+    pcoupltype      = isotropic
+    tau_p           = 2.0       ; Time constant (ps)
+    ref_p           = 1.0       ; Target pressure (bar)
+    compressibility = 4.5e-5    ; Water compressibility (bar^-1)
+    refcoord_scaling = com      ; Scale reference coordinates
+   
+    ; Velocity generation
+    gen_vel     = no            ; Continue from NPT equilibration
+   
+    ; Periodic boundary conditions
+    pbc         = xyz
+   
+    ; Constraints
+    constraints          = h-bonds
+    constraint_algorithm = LINCS
+    lincs_iter           = 2     ; Increased for better energy conservation
+    lincs_order          = 4
+   
+    ; Center of mass motion removal
+    comm-mode   = Linear
+    nstcomm     = 100           ; Remove COM motion every 200 fs
+    EOF
+    ```
+
+4. **Create Compact Production MDP for 350 K (PoC)**
+    ```bash
+    cat > mdp/prod_350K_compact.mdp << 'EOF'
+    ; prod_350K_compact.mdp - Production MD at 350 K with reduced trajectory size
+    ; Output every 30 fs instead of 10 fs to reduce storage by ~3x
+    ; Target: ~50 GB trajectory instead of ~140 GB
+   
+    ; Run parameters
+    integrator  = md            ; Leap-frog integrator
+    dt          = 0.002         ; 2 fs timestep
+    nsteps      = 10000000      ; 20 ns (10,000,000 × 2 fs)
+   
+    ; Output control - REDUCED FREQUENCY for smaller files
+    nstlog      = 5000          ; Log every 10 ps
+    nstenergy   = 5000          ; Energy every 10 ps
+    nstxout     = 0             ; No full-precision coordinates
+    nstvout     = 0             ; No velocities
+    nstxout-compressed = 15     ; Compressed coords every 30 fs (15 × 2 fs)
+    compressed-x-grps = System  ; Save all atoms
+   
+    ; Neighbor searching
+    cutoff-scheme = Verlet
+    nstlist     = 20            ; Update neighbor list every 40 fs
+    rlist       = 1.2           ; nm
+   
+    ; Electrostatics (PME)
+    coulombtype = PME
+    rcoulomb    = 1.2           ; nm
+    pme_order   = 4             ; Cubic interpolation
+    fourierspacing = 0.12       ; nm
+   
+    ; Van der Waals
+    vdwtype     = Cut-off
+    vdw-modifier = Potential-shift
+    rvdw        = 1.2           ; nm
+    DispCorr    = EnerPres      ; Long-range dispersion correction
+   
+    ; Temperature coupling
+    tcoupl      = V-rescale     ; Stochastic velocity rescaling
+    tc-grps     = System        ; Single coupling group
+    tau_t       = 0.5           ; Relaxed coupling (ps)
+    ref_t       = 350           ; Target temperature (K)
+   
+    ; Pressure coupling
+    pcoupl          = Parrinello-Rahman
+    pcoupltype      = isotropic
+    tau_p           = 2.0       ; Time constant (ps)
+    ref_p           = 1.0       ; Target pressure (bar)
+    compressibility = 4.5e-5    ; Water compressibility (bar^-1)
+    refcoord_scaling = com      ; Scale reference coordinates
+   
+    ; Velocity generation
+    gen_vel     = no            ; Continue from NPT equilibration
+   
+    ; Periodic boundary conditions
+    pbc         = xyz
+   
+    ; Constraints
+    constraints          = h-bonds
+    constraint_algorithm = LINCS
+    lincs_iter           = 2     ; Increased for better energy conservation
+    lincs_order          = 4
+   
+    ; Center of mass motion removal
+    comm-mode   = Linear
+    nstcomm     = 100           ; Remove COM motion every 200 fs
+    EOF
+    ```
+
 ### MDP Parameter Rationale
 
 | Parameter | Value | Rationale |
 |-----------|-------|-----------|
-| `nstxout-compressed = 5` | 10 fs | QENS probes 0.1-100 ps dynamics |
+| `nstxout-compressed = 10` | 20 fs | Reduced-frequency output for PoC |
+| `nstxout-compressed = 15` | 30 fs | Compact output (~50 GB per run) |
 | `tau_t = 0.5` | 0.5 ps | Relaxed coupling reduces thermostat artifacts |
 | `lincs_iter = 2` | 2 | Better energy conservation |
 | `DispCorr = EnerPres` | On | Correct for LJ cutoff |
@@ -204,6 +343,8 @@ Create simulation parameter files optimized for QENS-relevant trajectory output.
 ### Deliverables
 - `mdp/prod_300K.mdp` - Production parameters for 300 K
 - `mdp/prod_350K.mdp` - Production parameters for 350 K
+- `mdp/prod_300K_compact.mdp` - Compact production parameters for 300 K
+- `mdp/prod_350K_compact.mdp` - Compact production parameters for 350 K
 
 ---
 
@@ -229,7 +370,7 @@ Generate binary run input files for all 8 production simulations.
 2. **Generate TPR Files - AMBER Systems**
    ```bash
    # Glycine AMBER 300K
-   gmx grompp -f mdp/prod_300K.mdp \
+    gmx grompp -f mdp/prod_300K_compact.mdp \
        -c systems/glycine/amber99sb/300K/npt/npt.gro \
        -t systems/glycine/amber99sb/300K/npt/npt.cpt \
        -p systems/glycine/amber99sb/topology.top \
@@ -237,7 +378,7 @@ Generate binary run input files for all 8 production simulations.
        -maxwarn 0
    
    # Glycine AMBER 350K
-   gmx grompp -f mdp/prod_350K.mdp \
+    gmx grompp -f mdp/prod_350K_compact.mdp \
        -c systems/glycine/amber99sb/350K/npt/npt.gro \
        -t systems/glycine/amber99sb/350K/npt/npt.cpt \
        -p systems/glycine/amber99sb/topology.top \
@@ -245,7 +386,7 @@ Generate binary run input files for all 8 production simulations.
        -maxwarn 0
    
    # Gly-Gly AMBER 300K
-   gmx grompp -f mdp/prod_300K.mdp \
+    gmx grompp -f mdp/prod_300K_compact.mdp \
        -c systems/glygly/amber99sb/300K/npt/npt.gro \
        -t systems/glygly/amber99sb/300K/npt/npt.cpt \
        -p systems/glygly/amber99sb/topology.top \
@@ -253,7 +394,7 @@ Generate binary run input files for all 8 production simulations.
        -maxwarn 0
    
    # Gly-Gly AMBER 350K
-   gmx grompp -f mdp/prod_350K.mdp \
+    gmx grompp -f mdp/prod_350K_compact.mdp \
        -c systems/glygly/amber99sb/350K/npt/npt.gro \
        -t systems/glygly/amber99sb/350K/npt/npt.cpt \
        -p systems/glygly/amber99sb/topology.top \
@@ -264,7 +405,7 @@ Generate binary run input files for all 8 production simulations.
 3. **Generate TPR Files - CHARMM Systems**
    ```bash
    # Glycine CHARMM 300K
-   gmx grompp -f mdp/prod_300K.mdp \
+    gmx grompp -f mdp/prod_300K_compact.mdp \
        -c systems/glycine/charmm27/300K/npt/npt.gro \
        -t systems/glycine/charmm27/300K/npt/npt.cpt \
        -p systems/glycine/charmm27/topology.top \
@@ -272,7 +413,7 @@ Generate binary run input files for all 8 production simulations.
        -maxwarn 0
    
    # Glycine CHARMM 350K
-   gmx grompp -f mdp/prod_350K.mdp \
+    gmx grompp -f mdp/prod_350K_compact.mdp \
        -c systems/glycine/charmm27/350K/npt/npt.gro \
        -t systems/glycine/charmm27/350K/npt/npt.cpt \
        -p systems/glycine/charmm27/topology.top \
@@ -280,7 +421,7 @@ Generate binary run input files for all 8 production simulations.
        -maxwarn 0
    
    # Gly-Gly CHARMM 300K
-   gmx grompp -f mdp/prod_300K.mdp \
+    gmx grompp -f mdp/prod_300K_compact.mdp \
        -c systems/glygly/charmm27/300K/npt/npt.gro \
        -t systems/glygly/charmm27/300K/npt/npt.cpt \
        -p systems/glygly/charmm27/topology.top \
@@ -288,7 +429,7 @@ Generate binary run input files for all 8 production simulations.
        -maxwarn 0
    
    # Gly-Gly CHARMM 350K
-   gmx grompp -f mdp/prod_350K.mdp \
+    gmx grompp -f mdp/prod_350K_compact.mdp \
        -c systems/glygly/charmm27/350K/npt/npt.gro \
        -t systems/glygly/charmm27/350K/npt/npt.cpt \
        -p systems/glygly/charmm27/topology.top \
@@ -298,8 +439,8 @@ Generate binary run input files for all 8 production simulations.
 
 4. **Verify TPR Generation**
    - Check for warnings in grompp output
-   - Verify atom counts match equilibrated systems
-   - Confirm trajectory output frequency is 10 fs
+    - Verify atom counts match equilibrated systems
+    - Confirm trajectory output frequency is 30 fs
 
 ### Deliverables
 - 8 TPR files: `systems/{mol}/{ff}/{temp}K/production/prod.tpr`
@@ -309,7 +450,7 @@ Generate binary run input files for all 8 production simulations.
 ## Substep 2.3: Run Production Simulations
 
 ### Objective
-Execute 20 ns production MD for all 8 systems with high-frequency trajectory output.
+Execute 20 ns production MD for all 8 systems with compact trajectory output.
 
 ### Implementation Steps
 
@@ -391,7 +532,7 @@ Execute 20 ns production MD for all 8 systems with high-frequency trajectory out
 - CPU-only: ~2-4 weeks for all 8 systems (sequential)
 
 ### Deliverables (per system)
-- `prod.xtc` - Compressed trajectory (10 fs resolution)
+- `prod.xtc` - Compressed trajectory (30 fs resolution)
 - `prod.edr` - Energy file
 - `prod.log` - Log file
 - `prod.cpt` - Checkpoint for continuation
@@ -422,11 +563,11 @@ Verify production trajectories are suitable for QENS analysis.
    done
    ```
 
-2. **Verify Frame Spacing (10 fs)**
+2. **Verify Frame Spacing (30 fs)**
    ```bash
-   # Check first few frames to confirm 10 fs interval
+    # Check first few frames to confirm 30 fs interval
    gmx dump -f prod.xtc 2>&1 | head -50 | grep "time="
-   # Should show: time= 0.000, time= 0.010, time= 0.020, ...
+    # Should show: time= 0.000, time= 0.030, time= 0.060, ...
    ```
 
 3. **Extract Temperature and Pressure**
@@ -527,7 +668,7 @@ Verify production trajectories are suitable for QENS analysis.
 | Pressure | 1.0 bar average | ±100 bar fluctuations normal |
 | Density | ~1000 kg/m³ (TIP3P) | ±10 kg/m³ |
 | Trajectory length | 20 ns | ≥19.9 ns acceptable |
-| Frame interval | 10 fs | Exact |
+| Frame interval | 30 fs | Exact |
 | No LINCS warnings | 0 | - |
 
 ### Deliverables
@@ -608,11 +749,11 @@ Manage large trajectory files and ensure data preservation.
 
 | File Type | Size per System | Total (8 systems) |
 |-----------|-----------------|-------------------|
-| `prod.xtc` (20 ns @ 10 fs) | ~20-40 GB | ~160-320 GB |
+| `prod.xtc` (20 ns @ 30 fs) | ~45-55 GB | ~360-440 GB |
 | `prod.edr` | ~200 MB | ~1.6 GB |
 | `prod.cpt` | ~50 MB | ~400 MB |
 | `prod_hydrogen.xtc` | ~2-5 GB | ~16-40 GB |
-| **Total** | ~25-50 GB | **~200-400 GB** |
+| **Total** | ~50-60 GB | **~400-480 GB** |
 
 ### Implementation Steps
 
@@ -653,7 +794,7 @@ Manage large trajectory files and ensure data preservation.
 ### Expected Outputs
 
 For each of 8 systems:
-- `production/prod.xtc` - 20 ns trajectory at 10 fs resolution
+- `production/prod.xtc` - 20 ns trajectory at 30 fs resolution
 - `production/prod.edr` - Energy data
 - `production/prod_center.xtc` - Processed trajectory for analysis
 - `production/prod_hydrogen.xtc` - Hydrogen trajectory for QENS
@@ -662,7 +803,7 @@ For each of 8 systems:
 
 **Trajectory Quality:**
 - [ ] All 8 simulations completed 20 ns without crashes
-- [ ] Frame interval is exactly 10 fs (0.010 ps)
+- [ ] Frame interval is exactly 30 fs (0.030 ps)
 - [ ] No LINCS warnings in log files
 - [ ] Temperature stable at target (±2 K average)
 - [ ] Pressure stable at 1 bar (±100 bar fluctuations)
@@ -674,7 +815,7 @@ For each of 8 systems:
 - [ ] Processed trajectories created successfully
 
 **Storage:**
-- [ ] Total storage within budget (~200-400 GB)
+- [ ] Total storage within budget (~400-480 GB)
 - [ ] Essential files backed up
 - [ ] Intermediate files cleaned up if needed
 
@@ -684,14 +825,16 @@ For each of 8 systems:
 SQUIP/
 ├── mdp/
 │   ├── prod_300K.mdp
-│   └── prod_350K.mdp
+│   ├── prod_350K.mdp
+│   ├── prod_300K_compact.mdp
+│   └── prod_350K_compact.mdp
 ├── systems/
 │   ├── glycine/
 │   │   ├── amber99sb/
 │   │   │   ├── 300K/
 │   │   │   │   └── production/
 │   │   │   │       ├── prod.tpr
-│   │   │   │       ├── prod.xtc      (~30 GB)
+│   │   │   │       ├── prod.xtc      (~50 GB)
 │   │   │   │       ├── prod.edr
 │   │   │   │       ├── prod.log
 │   │   │   │       ├── prod.cpt
@@ -775,9 +918,9 @@ After completing Step 2:
 
 ## Notes and Considerations
 
-1. **Trajectory Output Frequency**: The 10 fs output interval is critical for QENS analysis. This matches the ~0.1-100 ps timescales probed by neutron scattering experiments.
+1. **Trajectory Output Frequency**: The 30 fs output interval is suitable for PoC QENS analysis. Use 10 fs for full-resolution production runs.
 
-2. **Storage Requirements**: High-frequency output generates large trajectories (~20-40 GB per 20 ns simulation). Ensure adequate storage before starting.
+2. **Storage Requirements**: Compact output generates ~45-55 GB trajectories per 20 ns simulation. Ensure adequate storage before starting.
 
 3. **Thermostat Choice**: V-rescale with relaxed coupling (τ=0.5 ps) minimizes thermostat artifacts on picosecond dynamics while maintaining proper temperature control.
 

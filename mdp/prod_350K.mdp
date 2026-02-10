@@ -1,5 +1,5 @@
 ; prod_350K.mdp - Production MD at 350 K for QENS analysis
-; High-frequency trajectory output for S(q,ω) calculation
+; Reduced-frequency trajectory output for PoC S(q,ω) calculation
 
 ; Run parameters
 integrator  = md            ; Leap-frog integrator
@@ -11,7 +11,7 @@ nstlog      = 5000          ; Log every 10 ps
 nstenergy   = 5000          ; Energy every 10 ps
 nstxout     = 0             ; No full-precision coordinates (use compressed)
 nstvout     = 0             ; No velocities to main trajectory
-nstxout-compressed = 5      ; Compressed coords every 10 fs (5 × 2 fs)
+nstxout-compressed = 10     ; Compressed coords every 20 fs (10 × 2 fs)
 compressed-x-grps = System  ; Save all atoms
 
 ; Neighbor searching
