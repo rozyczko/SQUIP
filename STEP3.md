@@ -113,6 +113,9 @@ Lx, Ly, Lz = u.trajectory.ts.dimensions[:3]  # Angstrom
 print(f"{Lx/10:.6f} {Ly/10:.6f} {Lz/10:.6f}")  # print in nm
 ```
 
+## RESULT: 5.359701 5.359701 5.359701
+
+
 2) Reimage and fix the box using GROMACS (PowerShell-friendly):
 
 ```bash
