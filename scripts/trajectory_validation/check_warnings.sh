@@ -18,10 +18,14 @@ echo "Scanning: $LOG_FILE"
 echo "========================================"
 
 # Count warnings
-LINCS_WARN=$(grep -ci "LINCS warning" "$LOG_FILE" 2>/dev/null || echo 0)
-SHAKE_WARN=$(grep -ci "SHAKE" "$LOG_FILE" 2>/dev/null || echo 0)
-ERRORS=$(grep -ci "error" "$LOG_FILE" 2>/dev/null || echo 0)
-WARNINGS=$(grep -ci "warning" "$LOG_FILE" 2>/dev/null || echo 0)
+LINCS_WARN=$(grep -ci "LINCS warning" "$LOG_FILE" 2>/dev/null || true)
+SHAKE_WARN=$(grep -ci "SHAKE" "$LOG_FILE" 2>/dev/null || true)
+ERRORS=$(grep -ci "error" "$LOG_FILE" 2>/dev/null || true)
+WARNINGS=$(grep -ci "warning" "$LOG_FILE" 2>/dev/null || true)
+LINCS_WARN=${LINCS_WARN:-0}
+SHAKE_WARN=${SHAKE_WARN:-0}
+ERRORS=${ERRORS:-0}
+WARNINGS=${WARNINGS:-0}
 
 echo "LINCS warnings: $LINCS_WARN"
 echo "SHAKE warnings: $SHAKE_WARN"
@@ -41,7 +45,8 @@ if [ "$LINCS_WARN" -gt 0 ]; then
 fi
 
 # Check for fatal errors
-FATAL=$(grep -ci "fatal" "$LOG_FILE" 2>/dev/null || echo 0)
+FATAL=$(grep -ci "fatal" "$LOG_FILE" 2>/dev/null || true)
+FATAL=${FATAL:-0}
 if [ "$FATAL" -gt 0 ]; then
     echo "FATAL ERRORS DETECTED:"
     echo "----------------------------------------"
@@ -50,7 +55,8 @@ if [ "$FATAL" -gt 0 ]; then
 fi
 
 # Check simulation completed
-FINISHED=$(grep -c "Finished mdrun" "$LOG_FILE" 2>/dev/null || echo 0)
+FINISHED=$(grep -c "Finished mdrun" "$LOG_FILE" 2>/dev/null || true)
+FINISHED=${FINISHED:-0}
 if [ "$FINISHED" -eq 1 ]; then
     echo "✓ Simulation completed successfully"
 else

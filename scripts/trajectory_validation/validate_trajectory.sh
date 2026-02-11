@@ -49,7 +49,7 @@ fi
 
 # 2. Check frame spacing
 echo "" >> "$REPORT"
-echo "2. FRAME SPACING (should be 10 fs = 0.010 ps)" >> "$REPORT"
+echo "2. FRAME SPACING (should be 30 fs = 0.030 ps)" >> "$REPORT"
 echo "----------------------------------------" >> "$REPORT"
 
 # Get first 5 frame times

@@ -62,14 +62,14 @@ if [ -f "$PROD_DIR/prod.log" ]; then
     fi
 fi
 
-# 5. Check trajectory file size (should be > 50 GB for 20 ns)
+# 5. Check trajectory file size (should be > 15 GB for 20 ns at 30 fs output)
 if [ -f "$PROD_DIR/prod.xtc" ]; then
     SIZE=$(stat --printf="%s" "$PROD_DIR/prod.xtc" 2>/dev/null || stat -f%z "$PROD_DIR/prod.xtc" 2>/dev/null)
     SIZE_GB=$(echo "scale=1; $SIZE / 1073741824" | bc)
-    if (( $(echo "$SIZE_GB >= 50" | bc -l) )); then
+    if (( $(echo "$SIZE_GB >= 15" | bc -l) )); then
         echo "✓ Trajectory size: ${SIZE_GB} GB"
     else
-        echo "⚠ Small trajectory: ${SIZE_GB} GB (expected ~100+ GB)"
+        echo "⚠ Small trajectory: ${SIZE_GB} GB (expected ~35-50 GB)"
     fi
 fi
 

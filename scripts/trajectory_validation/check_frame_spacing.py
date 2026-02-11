@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-check_frame_spacing.py - Verify 10 fs frame spacing in trajectory
+"""check_frame_spacing.py - Verify 30 fs frame spacing in trajectory
 Usage: python check_frame_spacing.py <trajectory.xtc> [--tpr topology.tpr]
 """
 
@@ -32,8 +32,8 @@ def get_frame_times(xtc_file, tpr_file=None, max_frames=1000):
     
     return times
 
-def analyze_spacing(times, expected_dt=0.010):
-    """Analyze frame spacing (expected 10 fs = 0.010 ps)."""
+def analyze_spacing(times, expected_dt=0.030):
+    """Analyze frame spacing (expected 30 fs = 0.030 ps)."""
     if len(times) < 2:
         return None, None, None, None
     
@@ -58,8 +58,8 @@ def main():
     parser = argparse.ArgumentParser(description='Check trajectory frame spacing')
     parser.add_argument('trajectory', help='Input trajectory file (.xtc)')
     parser.add_argument('--tpr', '-s', help='TPR file for topology', default=None)
-    parser.add_argument('--expected-dt', type=float, default=0.010,
-                        help='Expected time step in ps (default: 0.010 = 10 fs)')
+    parser.add_argument('--expected-dt', type=float, default=0.030,
+                        help='Expected time step in ps (default: 0.030 = 30 fs)')
     parser.add_argument('--max-frames', type=int, default=1000,
                         help='Maximum frames to check (default: 1000)')
     args = parser.parse_args()

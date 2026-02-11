@@ -29,7 +29,7 @@ chmod +x *.sh
 
 | Script | Purpose |
 |--------|---------|
-| `check_frame_spacing.py` | Verify 10 fs frame intervals |
+| `check_frame_spacing.py` | Verify 30 fs frame intervals |
 | `extract_properties.py` | Extract T, P, density from .edr |
 | `generate_report.py` | Consolidated report for all systems |
 
@@ -70,7 +70,7 @@ python generate_report.py --base-dir systems/ --output validation_report.txt
 The scripts verify:
 
 1. **Completeness**: Trajectory reaches ~20 ns
-2. **Frame spacing**: Consistent 10 fs intervals
+2. **Frame spacing**: Consistent 30 fs intervals
 3. **Temperature**: Within 5 K of target (300 K or 350 K)
 4. **Pressure**: Reasonable fluctuations around 1 bar
 5. **Density**: ~1000 kg/m³ for aqueous systems
@@ -81,8 +81,8 @@ The scripts verify:
 
 For a successful 20 ns production run:
 - Trajectory length: ~20,000 ps
-- Frame count: ~2,000,000 frames
-- Trajectory size: 100-150 GB
+- Frame count: ~666,667 frames
+- Trajectory size: 35-50 GB
 - Temperature: 300±5 K or 350±5 K
 - Pressure: 1±100 bar (large fluctuations normal)
 - LINCS warnings: < 100

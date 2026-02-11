@@ -1,0 +1,204 @@
+#!/usr/bin/env python3
+"""
+compute_sqw.py - Compute S(q,w) using Dynasor with MDAnalysis reader.
+
+Usage:
+    python scripts/compute_sqw.py <molecule> <forcefield> <temperature>
+
+Example:
+    python scripts/compute_sqw.py glycine amber99sb 300K
+"""
+
+import argparse
+import logging
+import os
+import sys
+import numpy as np
+import MDAnalysis as mda
+
+from dynasor import Trajectory, compute_dynamic_structure_factors
+from dynasor.qpoints import get_spherical_qpoints
+from dynasor.post_processing import (
+    get_spherically_averaged_sample_binned,
+    get_weighted_sample,
+    NeutronScatteringLengths,
+)
+from dynasor.units import radians_per_fs_to_meV
+
+from build_element_groups import build_element_groups
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s: %(message)s")
+logger = logging.getLogger(__name__)
+
+
+def _resolve_xtc(base, use_fixed_box, allow_npt):
+    fixed = os.path.join(base, "prod_nvt_fixed.xtc")
+    npt = os.path.join(base, "prod_center.xtc")
+
+    if use_fixed_box and os.path.exists(fixed):
+        return fixed
+    if allow_npt and os.path.exists(npt):
+        return npt
+
+    if use_fixed_box:
+        raise FileNotFoundError(f"Fixed-box trajectory not found: {fixed}")
+    raise FileNotFoundError(f"Trajectory not found: {npt}")
+
+
+def compute_sqw_for_system(
+    molecule,
+    forcefield,
+    temperature,
+    q_max=2.5,
+    max_q_points=5000,
+    window_size=2000,
+    window_step=200,
+    frame_step=1,
+    frame_stop=None,
+    use_fixed_box=True,
+    allow_npt=False,
+    selection=None,
+    output_dir=None,
+):
+    base = os.path.join("systems", molecule, forcefield, temperature, "production")
+    tpr_file = os.path.join(base, "prod.tpr")
+    xtc_file = _resolve_xtc(base, use_fixed_box, allow_npt)
+
+    if output_dir is None:
+        output_dir = os.path.join(base, "analysis")
+    os.makedirs(output_dir, exist_ok=True)
+
+    for fpath in [tpr_file, xtc_file]:
+        if not os.path.exists(fpath):
+            raise FileNotFoundError(f"Required file not found: {fpath}")
+
+    logger.info(f"Processing {molecule}/{forcefield}/{temperature}")
+    logger.info(f"  TPR: {tpr_file}")
+    logger.info(f"  XTC: {xtc_file}")
+
+    u = mda.Universe(tpr_file, xtc_file)
+    dt_ps = u.trajectory.dt
+    if dt_ps is None:
+        dt_ps = 0.03
+        logger.warning("Trajectory dt not found. Using default 0.03 ps.")
+
+    dt_ps = dt_ps * frame_step
+    dt_fs = dt_ps * 1000.0
+
+    element_groups = build_element_groups(u, selection=selection)
+
+    traj = Trajectory(
+        filename=xtc_file,
+        topology=tpr_file,
+        trajectory_format="mdanalysis",
+        length_unit="nm",
+        time_unit="ps",
+        frame_step=frame_step,
+        frame_stop=frame_stop,
+        atomic_indices=element_groups,
+    )
+
+    q_points = get_spherical_qpoints(
+        traj.cell,
+        q_max=q_max,
+        max_points=max_q_points,
+    )
+
+    logger.info(f"  Generated {len(q_points)} q-points (q_max={q_max} rad/Angstrom)")
+    logger.info("  Computing S(q,w) with:")
+    logger.info(f"    dt = {dt_fs:.3f} fs")
+    logger.info(f"    window_size = {window_size} frames = {window_size * dt_fs / 1000:.1f} ps")
+    logger.info(f"    window_step = {window_step} frames = {window_step * dt_fs / 1000:.1f} ps")
+    logger.info(
+        "    Frequency resolution: "
+        f"{2 * np.pi / (window_size * dt_fs) * radians_per_fs_to_meV:.4f} meV"
+    )
+    logger.info(f"    Nyquist frequency: {np.pi / dt_fs * radians_per_fs_to_meV:.1f} meV")
+
+    sample_raw = compute_dynamic_structure_factors(
+        traj,
+        q_points=q_points,
+        dt=dt_fs,
+        window_size=window_size,
+        window_step=window_step,
+        calculate_incoherent=True,
+    )
+
+    num_q_bins = 30
+    sample_averaged = get_spherically_averaged_sample_binned(sample_raw, num_q_bins=num_q_bins)
+
+    atom_types = list(sample_raw.particle_counts.keys())
+    neutron_weights = NeutronScatteringLengths(atom_types)
+    sample_neutron = get_weighted_sample(sample_averaged, neutron_weights)
+
+    omega_meV = sample_averaged.omega * radians_per_fs_to_meV
+
+    prefix = f"{molecule}_{forcefield}_{temperature}"
+    sample_raw.write_to_npz(os.path.join(output_dir, f"{prefix}_sqw_raw.npz"))
+    sample_averaged.write_to_npz(os.path.join(output_dir, f"{prefix}_sqw_averaged.npz"))
+    sample_neutron.write_to_npz(os.path.join(output_dir, f"{prefix}_sqw_neutron.npz"))
+
+    np.savez(
+        os.path.join(output_dir, f"{prefix}_sqw_arrays.npz"),
+        q_norms=sample_averaged.q_norms,
+        omega_rad_per_fs=sample_averaged.omega,
+        omega_meV=omega_meV,
+        time_fs=sample_averaged.time,
+        Sqw_coh=sample_averaged.Sqw_coh,
+        Sqw_incoh=sample_averaged.Sqw_incoh,
+        Fqt_coh=sample_averaged.Fqt_coh,
+        Fqt_incoh=sample_averaged.Fqt_incoh,
+    )
+
+    logger.info(f"  Complete: {prefix}")
+    return sample_averaged
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Compute S(q,w) using Dynasor")
+    parser.add_argument("molecule", nargs="?", help="glycine or glygly")
+    parser.add_argument("forcefield", nargs="?", help="amber99sb or charmm27")
+    parser.add_argument("temperature", nargs="?", help="300K or 350K")
+    parser.add_argument("--frame-step", type=int, default=1)
+    parser.add_argument("--frame-stop", type=int, default=None)
+    parser.add_argument("--allow-npt", action="store_true")
+    parser.add_argument("--selection", default=None, help="MDAnalysis atom selection")
+    args = parser.parse_args()
+
+    if args.molecule and args.forcefield and args.temperature:
+        compute_sqw_for_system(
+            args.molecule,
+            args.forcefield,
+            args.temperature,
+            frame_step=args.frame_step,
+            frame_stop=args.frame_stop,
+            use_fixed_box=not args.allow_npt,
+            allow_npt=args.allow_npt,
+            selection=args.selection,
+        )
+        return
+
+    if any([args.molecule, args.forcefield, args.temperature]):
+        print(__doc__)
+        sys.exit(1)
+
+    for mol in ["glycine", "glygly"]:
+        for ff in ["amber99sb", "charmm27"]:
+            for temp in ["300K", "350K"]:
+                try:
+                    compute_sqw_for_system(
+                        mol,
+                        ff,
+                        temp,
+                        frame_step=args.frame_step,
+                        frame_stop=args.frame_stop,
+                        use_fixed_box=not args.allow_npt,
+                        allow_npt=args.allow_npt,
+                        selection=args.selection,
+                    )
+                except Exception as exc:
+                    logger.error(f"Failed {mol}/{ff}/{temp}: {exc}")
+
+
+if __name__ == "__main__":
+    main()
