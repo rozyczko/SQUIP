@@ -92,6 +92,8 @@ def test_element_groups_exclude_virtual_sites():
         assert "M" not in groups, f"'M' should be filtered out, got keys: {list(groups.keys())}"
         assert "O" in groups
         assert "H" in groups
+        # Close handle so Windows can delete temp files
+        u.trajectory.close()
         print("PASS  test_element_groups_exclude_virtual_sites")
 
 
@@ -102,6 +104,9 @@ def test_full_pipeline():
     n_waters = 10
     box_len = 15.0  # Angstrom
     n_frames = 50
+
+    output_dir = os.path.join(os.path.dirname(__file__), "test_output")
+    os.makedirs(output_dir, exist_ok=True)
 
     with tempfile.TemporaryDirectory() as tmp:
         gro = os.path.join(tmp, "test.gro")
@@ -144,22 +149,46 @@ def test_full_pipeline():
         sample_neutron = get_weighted_sample(sample_avg, neutron_weights)
 
         omega_meV = sample_avg.omega * radians_per_fs_to_meV
-        print(f"  omega range: {omega_meV.min():.2f} .. {omega_meV.max():.2f} meV")
-        print(f"  Sqw_coh shape: {sample_avg.Sqw_coh.shape}")
 
-        # Save to temp dir
-        out = os.path.join(tmp, "sqw_arrays.npz")
+        # --- Save to persistent output directory ---
+        arrays_file = os.path.join(output_dir, "test_sqw_arrays.npz")
         np.savez(
-            out,
+            arrays_file,
             q_norms=sample_avg.q_norms,
             omega_meV=omega_meV,
             Sqw_coh=sample_avg.Sqw_coh,
             Sqw_incoh=sample_avg.Sqw_incoh,
+            Fqt_coh=sample_avg.Fqt_coh,
+            Fqt_incoh=sample_avg.Fqt_incoh,
         )
-        assert os.path.exists(out)
-        data = np.load(out)
+        sample_avg.write_to_npz(os.path.join(output_dir, "test_sqw_averaged.npz"))
+        sample_neutron.write_to_npz(os.path.join(output_dir, "test_sqw_neutron.npz"))
+
+        # --- Print summary of results ---
+        print(f"\n  === S(q,w) results ===")
+        print(f"  q bins       : {len(sample_avg.q_norms)}")
+        print(f"  q range      : {sample_avg.q_norms.min():.3f} .. {sample_avg.q_norms.max():.3f} 1/Angstrom")
+        print(f"  omega points : {len(omega_meV)}")
+        print(f"  omega range  : {omega_meV.min():.2f} .. {omega_meV.max():.2f} meV")
+        print(f"  Sqw_coh shape: {sample_avg.Sqw_coh.shape}  (q_bins x omega)")
+        print(f"  Sqw_coh max  : {sample_avg.Sqw_coh.max():.6f}")
+        print(f"  Sqw_incoh max: {sample_avg.Sqw_incoh.max():.6f}")
+        print(f"\n  Saved to: {output_dir}/")
+        print(f"    test_sqw_arrays.npz   - q, omega, S(q,w) arrays")
+        print(f"    test_sqw_averaged.npz - dynasor averaged sample")
+        print(f"    test_sqw_neutron.npz  - neutron-weighted sample")
+        print(f"\n  To inspect results:")
+        print(f"    python -c \"import numpy as np; d=np.load('{arrays_file}'); "
+              f"print(list(d.keys())); print('Sqw_coh:', d['Sqw_coh'].shape)\"")
+
+        assert os.path.exists(arrays_file)
+        data = np.load(arrays_file)
         assert "Sqw_coh" in data
-        print("PASS  test_full_pipeline")
+        print("\nPASS  test_full_pipeline")
+
+        # Close trajectory handles so Windows can delete temp files
+        u.trajectory.close()
+        traj._universe.trajectory.close()
 
 
 if __name__ == "__main__":
