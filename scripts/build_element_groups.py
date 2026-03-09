@@ -5,11 +5,27 @@ import MDAnalysis as mda
 
 WATER_RESNAMES = {"SOL", "WAT", "HOH", "TIP3", "TIP3P", "TIP4", "TIP4P", "T4E"}
 
+# Virtual-site / dummy atom names that should be excluded from
+# scattering calculations (e.g. TIP4P-Ew "MW" sites).
+VIRTUAL_SITE_NAMES = {"MW", "LP", "EP", "VS"}
+
 
 def guess_element(atom):
     if atom.element:
         return atom.element.capitalize()
     return atom.name[0].upper()
+
+
+def _is_virtual_site(atom):
+    """Return True for virtual sites (zero-mass dummy atoms)."""
+    if atom.name in VIRTUAL_SITE_NAMES:
+        return True
+    try:
+        if atom.mass < 0.1:
+            return True
+    except Exception:
+        pass
+    return False
 
 
 def build_element_groups(universe, selection=None):
@@ -20,6 +36,8 @@ def build_element_groups(universe, selection=None):
 
     groups = {}
     for atom in atoms:
+        if _is_virtual_site(atom):
+            continue
         elem = guess_element(atom)
         groups.setdefault(elem, []).append(atom.index)  # 0-based
     return groups

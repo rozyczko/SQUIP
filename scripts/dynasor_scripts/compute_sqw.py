@@ -16,7 +16,7 @@ import sys
 import numpy as np
 import MDAnalysis as mda
 
-from dynasor import Trajectory, compute_dynamic_structure_factors
+from dynasor import compute_dynamic_structure_factors
 from dynasor.qpoints import get_spherical_qpoints
 from dynasor.post_processing import (
     get_spherically_averaged_sample_binned,
@@ -25,6 +25,7 @@ from dynasor.post_processing import (
 )
 from dynasor.units import radians_per_fs_to_meV
 
+from gromacs_trajectory import GROMACSTrajectory
 from build_element_groups import build_element_groups
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s: %(message)s")
@@ -82,20 +83,19 @@ def compute_sqw_for_system(
         dt_ps = 0.03
         logger.warning("Trajectory dt not found. Using default 0.03 ps.")
 
-    dt_ps = dt_ps * frame_step
+    # dt must be the time between consecutive frames in the *original*
+    # trajectory (not multiplied by frame_step).  Dynasor computes
+    # delta_t = traj.frame_step * dt internally.
     dt_fs = dt_ps * 1000.0
 
     element_groups = build_element_groups(u, selection=selection)
 
-    traj = Trajectory(
-        filename=xtc_file,
+    traj = GROMACSTrajectory(
         topology=tpr_file,
-        trajectory_format="mdanalysis",
-        length_unit="nm",
-        time_unit="ps",
+        trajectory=xtc_file,
+        atomic_indices=element_groups,
         frame_step=frame_step,
         frame_stop=frame_stop,
-        atomic_indices=element_groups,
     )
 
     q_points = get_spherical_qpoints(

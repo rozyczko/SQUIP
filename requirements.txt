@@ -1,1 +1,7 @@
+dynasor
+h5py
+matplotlib
+MDAnalysis
+numpy
 rdkit
+scipy

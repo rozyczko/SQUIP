@@ -196,7 +196,7 @@ import numpy as np
 import logging
 import MDAnalysis as mda
 
-from dynasor import Trajectory, compute_dynamic_structure_factors
+from dynasor import compute_dynamic_structure_factors
 from dynasor.qpoints import get_spherical_qpoints
 from dynasor.post_processing import (
     get_spherically_averaged_sample_binned,
@@ -205,24 +205,11 @@ from dynasor.post_processing import (
 )
 from dynasor.units import radians_per_fs_to_meV
 
+from gromacs_trajectory import GROMACSTrajectory
+from build_element_groups import build_element_groups
+
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s: %(message)s')
 logger = logging.getLogger(__name__)
-
-WATER_RESNAMES = {"SOL", "WAT", "HOH", "TIP3", "TIP3P", "TIP4", "TIP4P", "T4E"}
-
-
-def guess_element(atom):
-    if atom.element:
-        return atom.element.capitalize()
-    return atom.name[0].upper()
-
-
-def build_element_groups(universe):
-    groups = {}
-    for atom in universe.atoms:
-        elem = guess_element(atom)
-        groups.setdefault(elem, []).append(atom.index)
-    return groups
 
 
 def compute_sqw_for_system(molecule, forcefield, temperature,
@@ -248,20 +235,24 @@ def compute_sqw_for_system(molecule, forcefield, temperature,
 
     # MDAnalysis read for dt and element groups
     u = mda.Universe(tpr_file, xtc_file)
-    dt_ps = u.trajectory.dt * frame_step
-    dt_fs = dt_ps * 1000.0
     element_groups = build_element_groups(u)
 
-    # Dynasor trajectory using MDAnalysis reader
-    traj = Trajectory(
-        filename=xtc_file,
+    # dt is the time between consecutive frames in the *original*
+    # trajectory.  Do NOT multiply by frame_step — Dynasor handles
+    # that internally (delta_t = traj.frame_step * dt).
+    dt_ps = u.trajectory.dt
+    dt_fs = dt_ps * 1000.0
+
+    # Dynasor's built-in Trajectory class cannot load GROMACS
+    # .tpr + .xtc pairs (its MDAnalysis reader only accepts a single
+    # filename).  GROMACSTrajectory is a thin MDAnalysis wrapper that
+    # exposes the same duck-typed interface Dynasor expects.
+    traj = GROMACSTrajectory(
         topology=tpr_file,
-        trajectory_format='mdanalysis',
-        length_unit='nm',
-        time_unit='ps',
+        trajectory=xtc_file,
+        atomic_indices=element_groups,
         frame_step=frame_step,
         frame_stop=frame_stop,
-        atomic_indices=element_groups,
     )
 
     q_points = get_spherical_qpoints(
@@ -442,7 +433,7 @@ Global:
 - Use prod_nvt_fixed.xtc (fixed box). Do not use prod_center.xtc for final results.
 
 2) Memory errors
-- Use frame_step to subsample and adjust dt accordingly. Do not keep dt fixed at 30 fs if you subsample.
+- Use frame_step to subsample. dt should always be the *original* interval between consecutive trajectory frames (e.g. 30 fs). Dynasor handles subsampling internally via delta_t = traj.frame_step * dt.
 
 3) Atom type mapping errors
 - Build element groups via MDAnalysis as shown. Do not rely on NDX parsing.
