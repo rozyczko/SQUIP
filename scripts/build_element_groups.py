@@ -11,8 +11,11 @@ VIRTUAL_SITE_NAMES = {"MW", "LP", "EP", "VS"}
 
 
 def guess_element(atom):
-    if atom.element:
-        return atom.element.capitalize()
+    try:
+        if atom.element:
+            return atom.element.capitalize()
+    except Exception:
+        pass
     return atom.name[0].upper()
 
 
