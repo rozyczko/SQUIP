@@ -16,6 +16,11 @@ import sys
 import numpy as np
 import MDAnalysis as mda
 
+SCRIPT_DIR = os.path.dirname(__file__)
+SCRIPTS_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, ".."))
+if SCRIPTS_ROOT not in sys.path:
+    sys.path.insert(0, SCRIPTS_ROOT)
+
 from dynasor import compute_dynamic_structure_factors
 from dynasor.qpoints import get_spherical_qpoints
 from dynasor.post_processing import (
@@ -30,6 +35,28 @@ from build_element_groups import build_element_groups
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
+
+
+def _build_neutron_sample_or_none(sample_averaged, particle_counts):
+    atom_types = list(particle_counts.keys())
+    try:
+        neutron_weights = NeutronScatteringLengths(atom_types)
+    except Exception as exc:
+        unsupported = []
+        for atom_type in atom_types:
+            try:
+                NeutronScatteringLengths([atom_type])
+            except Exception:
+                unsupported.append(atom_type)
+        if unsupported:
+            logger.warning(
+                "Skipping neutron-weighted S(q,w): unsupported particle types: %s",
+                ", ".join(sorted(unsupported)),
+            )
+            return None
+        raise RuntimeError(f"Failed to build neutron weights for atom types {atom_types}: {exc}")
+
+    return get_weighted_sample(sample_averaged, neutron_weights)
 
 
 def _resolve_xtc(base, use_fixed_box, allow_npt):
@@ -127,16 +154,18 @@ def compute_sqw_for_system(
     num_q_bins = 30
     sample_averaged = get_spherically_averaged_sample_binned(sample_raw, num_q_bins=num_q_bins)
 
-    atom_types = list(sample_raw.particle_counts.keys())
-    neutron_weights = NeutronScatteringLengths(atom_types)
-    sample_neutron = get_weighted_sample(sample_averaged, neutron_weights)
+    sample_neutron = _build_neutron_sample_or_none(
+        sample_averaged,
+        sample_raw.particle_counts,
+    )
 
     omega_meV = sample_averaged.omega * radians_per_fs_to_meV
 
     prefix = f"{molecule}_{forcefield}_{temperature}"
     sample_raw.write_to_npz(os.path.join(output_dir, f"{prefix}_sqw_raw.npz"))
     sample_averaged.write_to_npz(os.path.join(output_dir, f"{prefix}_sqw_averaged.npz"))
-    sample_neutron.write_to_npz(os.path.join(output_dir, f"{prefix}_sqw_neutron.npz"))
+    if sample_neutron is not None:
+        sample_neutron.write_to_npz(os.path.join(output_dir, f"{prefix}_sqw_neutron.npz"))
 
     np.savez(
         os.path.join(output_dir, f"{prefix}_sqw_arrays.npz"),

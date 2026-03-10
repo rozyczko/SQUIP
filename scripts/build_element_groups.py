@@ -6,8 +6,8 @@ import MDAnalysis as mda
 WATER_RESNAMES = {"SOL", "WAT", "HOH", "TIP3", "TIP3P", "TIP4", "TIP4P", "T4E"}
 
 # Virtual-site / dummy atom names that should be excluded from
-# scattering calculations (e.g. TIP4P-Ew "MW" sites).
-VIRTUAL_SITE_NAMES = {"MW", "LP", "EP", "VS"}
+# scattering calculations (e.g. TIP4P-Ew "MW" or "M" sites).
+VIRTUAL_SITE_NAMES = {"M", "MW", "LP", "EP", "VS"}
 
 
 def guess_element(atom):
@@ -21,7 +21,13 @@ def guess_element(atom):
 
 def _is_virtual_site(atom):
     """Return True for virtual sites (zero-mass dummy atoms)."""
-    if atom.name in VIRTUAL_SITE_NAMES:
+    atom_name = str(atom.name).upper()
+    if atom_name in VIRTUAL_SITE_NAMES:
+        return True
+    # Some topologies label water dummy sites as M, M1, M2, etc.
+    # Restrict this pattern to known water residues to avoid filtering
+    # real non-water atoms that may start with "M".
+    if str(atom.resname).upper() in WATER_RESNAMES and atom_name.startswith("M"):
         return True
     try:
         if atom.mass < 0.1:
